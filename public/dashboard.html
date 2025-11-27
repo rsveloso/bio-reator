@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Bio Reator - Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+
+<style>
+    body {
+        font-family: Arial;
+        background: #f2f2f2;
+        padding: 20px;
+    }
+    .card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    h2 { margin-top: 0; }
+    input {
+        width: 100%;
+        padding: 8px;
+        margin-top: 4px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+    button {
+        margin-top: 10px;
+        padding: 10px;
+        width: 100%;
+        border: none;
+        background: #008cff;
+        color: white;
+        border-radius: 6px;
+        font-size: 16px;
+    }
+</style>
+
+</head>
+<body>
+
+<h1>Bio Reator - Controle e Monitoramento</h1>
+
+<!-- STATUS ATUAL -->
+<div class="card">
+    <h2>Status Atual</h2>
+    <p><b>Temperatura:</b> <span id="tempAtual">--</span> °C</p>
+    <p><b>Bomba:</b> <span id="bombaStatus">--</span></p>
+</div>
+
+<!-- CONTROLES -->
+<div class="card">
+    <h2>Configurações</h2>
+
+    Temperatura Máxima:
+    <input id="tempMax" type="number" step="0.1">
+
+    Temperatura Mínima:
+    <input id="tempMin" type="number" step="0.1">
+
+    Minutos Ligado:
+    <input id="minLigado" type="number">
+
+    Minutos Sem Mudança:
+    <input id="minSemMud" type="number">
+
+    <button onclick="salvarConfig()">Salvar Configurações</button>
+</div>
+
+<!-- GRÁFICO -->
+<div class="card">
+    <h2>Gráfico de Temperatura</h2>
+    <canvas id="graficoTemp"></canvas>
+</div>
+
+<script>
+
+// ----------------------- FIREBASE -----------------------
+const firebaseConfig = {
+    apiKey: "AIzaSyBunmzsROUpo8miGHs9lffr70cRwX0cY98",
+    authDomain: "bio-reator.firebaseapp.com",
+    databaseURL: "https://bio-reator-default-rtdb.firebaseio.com/",
+    projectId: "bio-reator",
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ----------------------- GRÁFICO ------------------------
+const ctx = document.getElementById('graficoTemp').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Temperatura (°C)",
+            data: [],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: false }
+        }
+    }
+});
+
+// ----------------------- ATUALIZAR STATUS -----------------------
+db.ref("/status/temperatura").on("value", snap => {
+    document.getElementById("tempAtual").innerText = snap.val();
+});
+
+db.ref("/status/bomba").on("value", snap => {
+    document.getElementById("bombaStatus").innerText = snap.val();
+});
+
+// ----------------------- CARREGAR CONFIG -----------------------
+db.ref("/config").on("value", snap => {
+    let c = snap.val();
+    if (!c) return;
+
+    document.getElementById("tempMax").value = c.temperatura_max;
+    document.getElementById("tempMin").value = c.temperatura_min;
+    document.getElementById("minLigado").value = c.intervalo_ligado;
+    document.getElementById("minSemMud").value = c.intervalo_sem_mudanca;
+});
+
+// ----------------------- SALVAR CONFIGURAÇÕES -----------------------
+function salvarConfig() {
+    db.ref("/config").update({
+        temperatura_max: parseFloat(document.getElementById("tempMax").value),
+        temperatura_min: parseFloat(document.getElementById("tempMin").value),
+        intervalo_ligado: parseInt(document.getElementById("minLigado").value),
+        intervalo_sem_mudanca: parseInt(document.getElementById("minSemMud").value)
+    });
+    alert("Configurações salvas!");
+}
+
+// ----------------------- GRÁFICO DE HISTÓRICO -----------------------
+db.ref("/historico").on("child_added", snap => {
+    let timestamp = snap.key;
+    let valor = snap.val();
+
+    chart.data.labels.push(timestamp);
+    chart.data.datasets[0].data.push(valor);
+    chart.update();
+});
+
+</script>
+
+</body>
+</html>
