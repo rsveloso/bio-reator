@@ -1,45 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Bio Reator - Dashboard</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
-    .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    input { width: 80px; padding: 6px; font-size: 16px; }
-    button { padding: 10px 20px; margin-top: 10px; background: #2e7dff; color: white; border: none; border-radius: 6px; font-size: 16px; }
+    body {
+      background: #eef2f7;
+    }
+
+    .card {
+      border-radius: 14px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+
+    h1 {
+      font-weight: bold;
+    }
+
+    .config-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
-<body>
+<body class="p-4">
 
-<h1>Bio Reator - Painel</h1>
+<div class="container">
 
-<div class="card">
-  <h2>Status</h2>
-  <p><b>Temperatura atual:</b> <span id="tempAtual">--</span> °C</p>
-  <p><b>Bomba:</b> <span id="statusBomba">--</span></p>
+  <h1 class="mb-4 text-center">Bio Reator – Painel de Controle</h1>
+
+  <div class="row g-4">
+
+    <!-- CARD STATUS -->
+    <div class="col-lg-6">
+      <div class="card p-4">
+        <h3>Status Atual</h3>
+        <hr>
+        <p class="fs-4"><b>Temperatura:</b> <span id="tempAtual">--</span> °C</p>
+        <p class="fs-4"><b>Bomba:</b> <span id="statusBomba">--</span></p>
+      </div>
+    </div>
+
+    <!-- GRÁFICO -->
+    <div class="col-lg-6">
+      <div class="card p-4">
+        <h3>Monitoramento da Temperatura</h3>
+        <hr>
+        <canvas id="graficoTemp" height="150"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONFIGURAÇÕES -->
+  <div class="config-panel mt-4">
+    <h3>Configurações</h3>
+    <hr>
+
+    <div class="row g-3">
+
+      <div class="col-md-3">
+        <label class="form-label">Temperatura Máxima</label>
+        <input id="tempMax" type="number" step="0.1" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Temperatura Mínima</label>
+        <input id="tempMin" type="number" step="0.1" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Minutos ligado</label>
+        <input id="minLigado" type="number" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Minutos sem mudança</label>
+        <input id="minSem" type="number" class="form-control">
+      </div>
+
+    </div>
+
+    <button class="btn btn-primary btn-lg mt-4" onclick="salvar()">Salvar Alterações</button>
+  </div>
+
 </div>
 
-<div class="card">
-  <h2>Configurações</h2>
-  <p>Temperatura Máxima: <input id="tempMax" type="number" step="0.1"> °C</p>
-  <p>Temperatura Mínima: <input id="tempMin" type="number" step="0.1"> °C</p>
-  <p>Minutos ligado: <input id="minLigado" type="number"></p>
-  <p>Minutos sem mudança: <input id="minSem" type="number"></p>
-  <button onclick="salvar()">Salvar alterações</button>
-</div>
-
-<!-- ********** IMPORTANTE: carregar os SDKs ANTES do script que usa `firebase` ********** -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<!-- quick check se as libs carregaram -->
-<script>
-  console.log('window.firebase? ->', window.firebase);
-  if (!window.firebase) {
-    console.error('Firebase SDK não carregou. Verifique a URL, bloqueios de CSP ou Network.');
-  }
-</script>
 
 <script>
   const firebaseConfig = {
@@ -50,54 +108,98 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+</script>
 
-  // -----------------------------
-  //   GARANTE QUE "status" EXISTE
-  // -----------------------------
+<script>
+  // --------------------------
+  //     GRÁFICO Chart.js
+  // --------------------------
+  const ctx = document.getElementById('graficoTemp').getContext('2d');
+
+  const graficoTemp = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Temperatura (°C)",
+        data: [],
+        borderWidth: 3,
+        borderColor: "rgb(255, 99, 132)",
+        tension: 0.2
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: false
+        }
+      }
+    }
+  });
+
+  // --------------------------
+  // GARANTE QUE STATUS EXISTE
+  // --------------------------
   db.ref("status").once("value").then(snap => {
     if (!snap.exists()) {
       db.ref("status").set({
         temperatura: 0,
         bomba: "desligada"
       });
-      console.log("Nó 'status' criado no banco.");
-    } else {
-      console.log("Nó 'status' já existe:", snap.val());
     }
   });
 
-  // -----------------------------
-  //   LISTENERS DO STATUS
-  // -----------------------------
+  // --------------------------
+  //      ATUALIZAÇÕES LIVE
+  // --------------------------
   db.ref("status/temperatura").on("value", snap => {
     const val = snap.val();
     document.getElementById("tempAtual").innerText = val ?? "--";
+
+    if (val !== null) {
+      const timestamp = new Date().toLocaleTimeString("pt-BR", {hour12: false});
+
+      // adiciona dados ao gráfico
+      graficoTemp.data.labels.push(timestamp);
+      graficoTemp.data.datasets[0].data.push(val);
+
+      // mantém só os últimos 20 pontos
+      if (graficoTemp.data.labels.length > 20) {
+        graficoTemp.data.labels.shift();
+        graficoTemp.data.datasets[0].data.shift();
+      }
+
+      graficoTemp.update();
+    }
   });
 
   db.ref("status/bomba").on("value", snap => {
     const estado = snap.val();
-    let texto = "--";
+    let texto = "—";
 
-    if (estado === true || estado === "on" || estado === 1 || estado === "1") texto = "Ligada";
-    else if (estado === false || estado === "off" || estado === 0 || estado === "0") texto = "Desligada";
+    if (estado === true || estado === "on" || estado === 1) texto = "Ligada";
+    else if (estado === false || estado === "off" || estado === 0) texto = "Desligada";
     else if (estado) texto = String(estado);
 
     document.getElementById("statusBomba").innerText = texto;
   });
 
-  // -----------------------------
-  //   CONFIGURAÇÕES
-  // -----------------------------
+  // --------------------------
+  //     CARREGAR CONFIG
+  // --------------------------
   db.ref("config").on("value", snap => {
-    let c = snap.val();
+    const c = snap.val();
     if (!c) return;
 
-    document.getElementById("tempMax").value = c.temperatura_max ?? '';
-    document.getElementById("tempMin").value = c.temperatura_min ?? '';
-    document.getElementById("minLigado").value = c.intervalo_ligado ?? '';
-    document.getElementById("minSem").value = c.intervalo_sem_mudanca ?? '';
+    document.getElementById("tempMax").value = c.temperatura_max ?? "";
+    document.getElementById("tempMin").value = c.temperatura_min ?? "";
+    document.getElementById("minLigado").value = c.intervalo_ligado ?? "";
+    document.getElementById("minSem").value = c.intervalo_sem_mudanca ?? "";
   });
 
+  // --------------------------
+  //       SALVAR CONFIG
+  // --------------------------
   function salvar() {
     db.ref("config").update({
       temperatura_max: parseFloat(document.getElementById("tempMax").value),
@@ -105,10 +207,10 @@
       intervalo_ligado: parseInt(document.getElementById("minLigado").value),
       intervalo_sem_mudanca: parseInt(document.getElementById("minSem").value)
     });
+
     alert("Configurações salvas!");
   }
 </script>
-
 
 </body>
 </html>
