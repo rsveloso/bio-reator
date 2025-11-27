@@ -1,109 +1,67 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Bio Reator - Dashboard</title>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<style>
-body {
-  font-family: Arial;
-  padding: 20px;
-  background: #f4f4f4;
-}
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-input {
-  width: 80px;
-  padding: 6px;
-  font-size: 16px;
-}
-button {
-  padding: 10px 20px;
-  margin-top: 10px;
-  background: #2e7dff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-}
-</style>
-</head>
-<body>
-
-<h1>Bio Reator - Painel</h1>
-
-<div class="card">
-  <h2>Status</h2>
-  <p><b>Temperatura atual:</b> <span id="tempAtual">--</span> °C</p>
-  <p><b>Bomba:</b> <span id="statusBomba">--</span></p>
-</div>
-
-<div class="card">
-  <h2>Configurações</h2>
-
-  <p>Temperatura Máxima:  
-    <input id="tempMax" type="number" step="0.1"> °C
-  </p>
-
-  <p>Temperatura Mínima:  
-    <input id="tempMin" type="number" step="0.1"> °C
-  </p>
-
-  <p>Minutos ligado:  
-    <input id="minLigado" type="number">
-  </p>
-
-  <p>Minutos sem mudança:  
-    <input id="minSem" type="number">
-  </p>
-
-  <button onclick="salvar()">Salvar alterações</button>
-</div>
-
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBunmzsROUpo8miGHs9lffr70cRwX0cY98",
-  authDomain: "bio-reator.firebaseapp.com",
-  databaseURL: "https://bio-reator-default-rtdb.firebaseio.com/"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyBunmzsROUpo8miGHs9lffr70cRwX0cY98",
+    authDomain: "bio-reator.firebaseapp.com",
+    databaseURL: "https://bio-reator-default-rtdb.firebaseio.com/"
+  };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-db.ref("status/temperatura").on("value", snap => {
-  document.getElementById("tempAtual").innerText = snap.val();
-});
-
-db.ref("status/bomba").on("value", snap => {
-  document.getElementById("statusBomba").innerText = snap.val();
-});
-
-db.ref("config").on("value", snap => {
-  let c = snap.val();
-  document.getElementById("tempMax").value = c.temperatura_max;
-  document.getElementById("tempMin").value = c.temperatura_min;
-  document.getElementById("minLigado").value = c.intervalo_ligado;
-  document.getElementById("minSem").value = c.intervalo_sem_mudanca;
-});
-
-function salvar() {
-  db.ref("config").update({
-    temperatura_max: parseFloat(document.getElementById("tempMax").value),
-    temperatura_min: parseFloat(document.getElementById("tempMin").value),
-    intervalo_ligado: parseInt(document.getElementById("minLigado").value),
-    intervalo_sem_mudanca: parseInt(document.getElementById("minSem").value)
+  // -----------------------------
+  //   GARANTE QUE "status" EXISTE
+  // -----------------------------
+  db.ref("status").once("value").then(snap => {
+    if (!snap.exists()) {
+      db.ref("status").set({
+        temperatura: 0,
+        bomba: "desligada"
+      });
+      console.log("Nó 'status' criado no banco.");
+    } else {
+      console.log("Nó 'status' já existe:", snap.val());
+    }
   });
-  alert("Configurações salvas!");
-}
-</script>
 
-</body>
-</html>
+  // -----------------------------
+  //   LISTENERS DO STATUS
+  // -----------------------------
+  db.ref("status/temperatura").on("value", snap => {
+    const val = snap.val();
+    document.getElementById("tempAtual").innerText = val ?? "--";
+  });
+
+  db.ref("status/bomba").on("value", snap => {
+    const estado = snap.val();
+    let texto = "--";
+
+    if (estado === true || estado === "on" || estado === 1 || estado === "1") texto = "Ligada";
+    else if (estado === false || estado === "off" || estado === 0 || estado === "0") texto = "Desligada";
+    else if (estado) texto = String(estado);
+
+    document.getElementById("statusBomba").innerText = texto;
+  });
+
+  // -----------------------------
+  //   CONFIGURAÇÕES
+  // -----------------------------
+  db.ref("config").on("value", snap => {
+    let c = snap.val();
+    if (!c) return;
+
+    document.getElementById("tempMax").value = c.temperatura_max ?? '';
+    document.getElementById("tempMin").value = c.temperatura_min ?? '';
+    document.getElementById("minLigado").value = c.intervalo_ligado ?? '';
+    document.getElementById("minSem").value = c.intervalo_sem_mudanca ?? '';
+  });
+
+  function salvar() {
+    db.ref("config").update({
+      temperatura_max: parseFloat(document.getElementById("tempMax").value),
+      temperatura_min: parseFloat(document.getElementById("tempMin").value),
+      intervalo_ligado: parseInt(document.getElementById("minLigado").value),
+      intervalo_sem_mudanca: parseInt(document.getElementById("minSem").value)
+    });
+    alert("Configurações salvas!");
+  }
+</script>
