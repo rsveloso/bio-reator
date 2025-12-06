@@ -14,29 +14,48 @@
     body {
       background: #eef2f7;
     }
-
     .card {
       border-radius: 14px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.15);
     }
-
     h1 {
       font-weight: bold;
     }
-
     .config-panel {
       background: white;
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
+	.label {
+	  font-size: small;
+	  color: darkgrey;
+	}
+	#alertContainer {
+	  position: fixed;
+	  top: 20px;
+	  right: 20px;
+	  z-index: 9999;
+	  width: 300px;
+	}
+
   </style>
 </head>
+
 <body class="p-4">
+
+<!-- <div class="container mt-3"> -->
+  <div id="alertContainer"></div>
+<!-- </div> -->
 
 <div class="container">
 
   <h1 class="mb-4 text-center">Bio Reator – Painel de Controle</h1>
+  
+  <p class="text-center text-muted">
+    Última atualização do ESP32: 
+    <b><span id="ultimaAtualizacao">--</span></b>
+  </p>
 
   <div class="row g-4">
 
@@ -46,16 +65,52 @@
         <h3>Status Atual</h3>
         <hr>
         <p class="fs-4"><b>Temperatura:</b> <span id="tempAtual">--</span> °C</p>
-        <p class="fs-4"><b>Bomba:</b> <span id="statusBomba">--</span></p>
+        <p class="fs-4"><b>OD:</b> <span id="odAtual">--</span> %</p>
+		<p class="fs-4"><b>Distância:</b> <span id="distanciaAtual">--</span> cm</p>
+
+		<hr>
+
+        <p class="fs-4">
+		  <b>Bomba1:</b> <span id="statusBomba1">--</span>
+		  <label class="label"> (Rele 1 | Temp + OD + Período)</label>
+		  <br><small class="text-muted" id="motivoBomba1">--</small>
+		</p>
+
+		<p class="fs-4">
+		  <b>Bomba2:</b> <span id="statusBomba2">--</span> 
+		  <label class="label"> (Rele 2 | Distância)</label>
+		  <br><small class="text-muted" id="motivoBomba2">--</small>
+		</p>
+
+		<hr>
+		<p class="fs-4"><b>Sistema:</b> <span id="statusSistema">--</span></p>
       </div>
     </div>
 
-    <!-- GRÁFICO -->
+    <!-- GRÁFICO TEMPERATURA -->
     <div class="col-lg-6">
       <div class="card p-4">
         <h3>Monitoramento da Temperatura</h3>
         <hr>
         <canvas id="graficoTemp" height="150"></canvas>
+      </div>
+    </div>
+
+    <!-- GRÁFICO OD -->
+    <div class="col-lg-12">
+      <div class="card p-4">
+        <h3>Monitoramento do Oxigênio Dissolvido (OD)</h3>
+        <hr>
+        <canvas id="graficoOD" height="150"></canvas>
+      </div>
+    </div>
+	
+    <!-- GRÁFICO DISTANCIA -->
+    <div class="col-lg-12">
+      <div class="card p-4">
+        <h3>Monitoramento de Distância</h3>
+        <hr>
+        <canvas id="graficoDist" height="150"></canvas>
       </div>
     </div>
 
@@ -65,6 +120,11 @@
   <div class="config-panel mt-4">
     <h3>Configurações</h3>
     <hr>
+	
+	<div class="form-check form-switch mb-3">
+	  <input class="form-check-input" type="checkbox" id="chkMultiplicacao" onchange="alterarModoMultiplicacao()">
+	  <label class="form-check-label fs-5">Modo Multiplicação</label>
+	</div>
 
     <div class="row g-3">
 
@@ -73,6 +133,7 @@
         <input id="tempMax" type="number" step="0.1" class="form-control">
       </div>
 
+	  <!-- TEMPERATURA -->
       <div class="col-md-3">
         <label class="form-label">Temperatura Mínima</label>
         <input id="tempMin" type="number" step="0.1" class="form-control">
@@ -88,9 +149,37 @@
         <input id="minSem" type="number" class="form-control">
       </div>
 
+	  <!-- OD -->
+      <div class="col-md-3">
+        <label class="form-label mt-3">OD Mínimo (liga bomba 2)</label>
+        <input id="odMin" type="number" step="0.1" class="form-control">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label mt-3">OD Máximo (desliga bomba 2)</label>
+        <input id="odMax" type="number" step="0.1" class="form-control">
+      </div>
+	  
+	  
+      <div class="col-md-6">
+      </div>
+	  
+	  <!-- DISTÂNCIA -->
+	  <div class="col-md-3">
+		<label class="form-label mt-3">Distância Mínima (cm) – Liga Bomba2</label>
+		<input id="distMin" type="number" step="0.1" class="form-control">
+	  </div>
+
+	  <div class="col-md-3">
+		<label class="form-label mt-3">Distância Máxima (cm) – Desliga Bomba2</label>
+		<input id="distMax" type="number" step="0.1" class="form-control">
+	  </div>
+
     </div>
 
     <button class="btn btn-primary btn-lg mt-4" onclick="salvar()">Salvar Alterações</button>
+	
+    <button class="btn btn-primary btn-lg mt-4" onclick="forcarAtualizacao()">Atualizar ESP32 agora</button>
   </div>
 
 </div>
@@ -112,11 +201,11 @@
 
 <script>
   // --------------------------
-  //     GRÁFICO Chart.js
+  // GRÁFICO TEMPERATURA
   // --------------------------
-  const ctx = document.getElementById('graficoTemp').getContext('2d');
+  const ctxTemp = document.getElementById('graficoTemp').getContext('2d');
 
-  const graficoTemp = new Chart(ctx, {
+  const graficoTemp = new Chart(ctxTemp, {
     type: 'line',
     data: {
       labels: [],
@@ -124,46 +213,63 @@
         label: "Temperatura (°C)",
         data: [],
         borderWidth: 3,
-        borderColor: "rgb(255, 99, 132)",
+        borderColor: "#ff4d4d",
         tension: 0.2
       }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: false
-        }
-      }
     }
   });
 
   // --------------------------
-  // GARANTE QUE STATUS EXISTE
+  // GRÁFICO DISTÂNCIA
   // --------------------------
-  db.ref("status").once("value").then(snap => {
-    if (!snap.exists()) {
-      db.ref("status").set({
-        temperatura: 0,
-        bomba: "desligada"
-      });
+  const ctxDist = document.getElementById('graficoDist').getContext('2d');
+
+  const graficoDist = new Chart(ctxDist, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Distância (cm)",
+        data: [],
+        borderWidth: 3,
+        borderColor: "#007bff",
+        tension: 0.2
+      }]
     }
   });
 
   // --------------------------
-  //      ATUALIZAÇÕES LIVE
+  // GRÁFICO OD
   // --------------------------
+  const ctxOD = document.getElementById('graficoOD').getContext('2d');
+
+  const graficoOD = new Chart(ctxOD, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: "OD (%)",
+        data: [],
+        borderWidth: 3,
+        borderColor: "#28a745",
+        tension: 0.2
+      }]
+    }
+  });
+
+  // --------------------------
+  // STATUS REMOTO
+  // --------------------------
+
   db.ref("status/temperatura").on("value", snap => {
-    const val = snap.val();
-    document.getElementById("tempAtual").innerText = val ?? "--";
+    const v = snap.val();
+    document.getElementById("tempAtual").innerText = v ?? "--";
 
-    if (val !== null) {
-      const timestamp = new Date().toLocaleTimeString("pt-BR", {hour12: false});
+    if (v != null) {
+      const t = new Date().toLocaleTimeString("pt-BR", {hour12: false});
+      graficoTemp.data.labels.push(t);
+      graficoTemp.data.datasets[0].data.push(v);
 
-      // adiciona dados ao gráfico
-      graficoTemp.data.labels.push(timestamp);
-      graficoTemp.data.datasets[0].data.push(val);
-
-      // mantém só os últimos 20 pontos
       if (graficoTemp.data.labels.length > 20) {
         graficoTemp.data.labels.shift();
         graficoTemp.data.datasets[0].data.shift();
@@ -173,19 +279,76 @@
     }
   });
 
-  db.ref("status/bomba").on("value", snap => {
+  db.ref("status/od").on("value", snap => {
+    const v = snap.val();
+    document.getElementById("odAtual").innerText = v ?? "--";
+
+    if (v != null) {
+      const t = new Date().toLocaleTimeString("pt-BR", {hour12: false});
+      graficoOD.data.labels.push(t);
+      graficoOD.data.datasets[0].data.push(v);
+
+      if (graficoOD.data.labels.length > 20) {
+        graficoOD.data.labels.shift();
+        graficoOD.data.datasets[0].data.shift();
+      }
+
+      graficoOD.update();
+    }
+  });
+  
+  db.ref("status/distancia").on("value", snap => {
+	const d = snap.val();
+    document.getElementById("distanciaAtual").innerText = d ?? "--";
+
+    if (d != null) {
+      const t = new Date().toLocaleTimeString("pt-BR", {hour12: false});
+      graficoDist.data.labels.push(t);
+      graficoDist.data.datasets[0].data.push(d);
+
+      if (graficoDist.data.labels.length > 20) {
+        graficoDist.data.labels.shift();
+        graficoDist.data.datasets[0].data.shift();
+      }
+
+      graficoDist.update();
+    }
+  });
+
+  db.ref("status/bomba1").on("value", snap => {
     const estado = snap.val();
-    let texto = "—";
+    document.getElementById("statusBomba1").innerText =
+      estado == "LIGADA" ? "Ligada" : "Desligada";
+  });
+  
+  db.ref("status/bomba2").on("value", snap => {
+    const estado = snap.val();
+    document.getElementById("statusBomba2").innerText =
+      estado == "LIGADA" ? "Ligada" : "Desligada";
+  });
+  
+  db.ref("status/bomba1_motivo").on("value", snap => {
+	document.getElementById("motivoBomba1").innerText = snap.val() ?? "--";
+  });
 
-    if (estado === true || estado === "on" || estado === 1) texto = "Ligada";
-    else if (estado === false || estado === "off" || estado === 0) texto = "Desligada";
-    else if (estado) texto = String(estado);
+  db.ref("status/bomba2_motivo").on("value", snap => {
+	document.getElementById("motivoBomba2").innerText = snap.val() ?? "--";
+  });
 
-    document.getElementById("statusBomba").innerText = texto;
+  db.ref("status/sistema").on("value", snap => {
+    document.getElementById("statusSistema").innerText = snap.val().toUpperCase() ?? "--";
+  });
+  
+  db.ref("status/ultima_atualizacao").on("value", snap => {
+    const v = snap.val();
+    if (!v) return;
+
+    const data = new Date(v).toLocaleString("pt-BR", { hour12: false });
+    document.getElementById("ultimaAtualizacao").innerText = data;
   });
 
   // --------------------------
-  //     CARREGAR CONFIG
+  // CONFIGURAÇÕES
   // --------------------------
   db.ref("config").on("value", snap => {
     const c = snap.val();
@@ -195,21 +358,75 @@
     document.getElementById("tempMin").value = c.temperatura_min ?? "";
     document.getElementById("minLigado").value = c.intervalo_ligado ?? "";
     document.getElementById("minSem").value = c.intervalo_sem_mudanca ?? "";
+    document.getElementById("odMin").value = c.od_min ?? "";
+    document.getElementById("odMax").value = c.od_max ?? "";
+	document.getElementById("distMin").value = c.distancia_min ?? "";
+	document.getElementById("distMax").value = c.distancia_max ?? "";
+	document.getElementById("chkMultiplicacao").checked = snap.val().multiplicacao ?? false;
   });
 
-  // --------------------------
-  //       SALVAR CONFIG
-  // --------------------------
+  function mostrarAlerta(mensagem, tipo = "success") {
+    const id = "alert_" + Date.now();
+
+    const html = `
+	  <div id="${id}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+	    ${mensagem}
+	    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	  </div>
+    `;
+
+    const container = document.getElementById("alertContainer");
+    container.insertAdjacentHTML("beforeend", html);
+
+    // Remover automaticamente após 5 segundos
+    setTimeout(() => {
+	  const alertEl = document.getElementById(id);
+	  if (alertEl) {
+	    alertEl.classList.remove("show");
+	    setTimeout(() => alertEl.remove(), 150);
+	  }
+    }, 5000);
+  }
+
+
   function salvar() {
     db.ref("config").update({
       temperatura_max: parseFloat(document.getElementById("tempMax").value),
       temperatura_min: parseFloat(document.getElementById("tempMin").value),
       intervalo_ligado: parseInt(document.getElementById("minLigado").value),
-      intervalo_sem_mudanca: parseInt(document.getElementById("minSem").value)
+      intervalo_sem_mudanca: parseInt(document.getElementById("minSem").value),
+      od_min: parseFloat(document.getElementById("odMin").value),
+      od_max: parseFloat(document.getElementById("odMax").value),
+	  distancia_min: parseFloat(document.getElementById("distMin").value),
+	  distancia_max: parseFloat(document.getElementById("distMax").value)
     });
 
-    alert("Configurações salvas!");
+    mostrarAlerta("Configurações salvas com sucesso!", "success");
   }
+  
+  function forcarAtualizacao() {
+	db.ref("comandos/atualizar").set(firebase.database.ServerValue.TIMESTAMP)
+	  .then(() => {
+	    mostrarAlerta("Comando enviado! O ESP32 irá atualizar agora.", "success");
+	  })
+	  .catch(err => {
+	    console.error(err);
+	    mostrarAlerta("Erro ao enviar comando.", "danger");
+	  });
+  }
+  
+  function alterarModoMultiplicacao() {
+    const ativo = document.getElementById("chkMultiplicacao").checked;
+
+	db.ref("config").update({
+	  multiplicacao: ativo
+	});
+
+	db.ref("status").update({
+	  sistema: ativo ? "ligado" : "desligado"
+	});
+  }
+
 </script>
 
 </body>

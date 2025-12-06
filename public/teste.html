@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bio Reator — Dashboard V2</title>
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa6b2;
+      --accent:#0ea5a4;
+      --danger:#ff4d4d;
+      --success:#28a745;
+      --glass: rgba(255,255,255,0.04);
+      --glass-2: rgba(255,255,255,0.02);
+      --glass-border: rgba(255,255,255,0.06);
+      --glass-text: rgba(255,255,255,0.92);
+    }
+
+    /* Light theme palette */
+    :root[data-theme="light"]{
+      --bg: #eef7fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #007bff;
+      --danger: #e74343;
+      --success: #2f9e44;
+      --glass: rgba(15,23,36,0.02);
+      --glass-2: rgba(15,23,36,0.01);
+      --glass-border: rgba(15,23,36,0.06);
+      --glass-text: #071428;
+    }
+
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--glass-text);}
+
+    /* Animated gradient background */
+    body::before{
+      content:"";
+      position:fixed;inset:0;z-index:-2;
+      background: linear-gradient(120deg, rgba(14,165,164,0.12), rgba(59,130,246,0.06), rgba(99,102,241,0.06));
+      backdrop-filter: blur(10px);
+      animation: bgmove 18s linear infinite;
+    }
+    @keyframes bgmove {
+      0%{transform:translateY(0) scale(1);}
+      50%{transform:translateY(-6%) scale(1.02);}
+      100%{transform:translateY(0) scale(1);}
+    }
+
+    header{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 22px;
+    }
+    .brand { display:flex;gap:12px;align-items:center;}
+    .logo {
+      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,0.2);
+    }
+    h1{font-size:18px;margin:0;color:var(--glass-text);}
+
+    main.container{
+      padding:20px;
+      display:grid;
+      grid-template-columns: 415px 1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    /* Responsive -> single column on small screens */
+    @media (max-width: 900px){
+      main.container{grid-template-columns: 1fr; padding:12px;}
+    }
+
+    /* Left column: status & config */
+    .side {
+      position:sticky; top:18px;
+      display:flex;flex-direction:column;gap:16px;
+    }
+
+    .card {
+      background:var(--card);
+      border-radius:12px;
+      padding:14px;
+      border:1px solid var(--glass-border);
+      box-shadow: 0 6px 20px rgba(2,6,23,0.35);
+    }
+
+    .status-row{display:flex;gap:12px;align-items:center;}
+    .stat {
+      flex:1;
+      padding:10px;border-radius:10px;background:linear-gradient(180deg,var(--glass),var(--glass-2));
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .stat .label { color:var(--muted); font-size:12px; display:block; margin-bottom:6px; }
+    .stat .value { font-weight:700; font-size:20px; }
+
+    .btn {
+      display:inline-block;padding:10px 14px;border-radius:10px;background:var(--accent);color:white;border:0;cursor:pointer;
+    }
+
+    .muted { color:var(--muted); font-size:13px; }
+
+    /* Charts area */
+    .charts { display:grid; gap:14px; grid-template-columns: repeat(2, 1fr); }
+    @media (max-width:900px){ .charts{grid-template-columns:1fr;} }
+
+    .chart-card { padding:12px; display:flex;flex-direction:column; gap:8px; }
+
+    /* Config form */
+    .form-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:8px; }
+    @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} }
+
+    .field { display:flex;flex-direction:column; gap:6px; }
+    .field label { color:var(--muted); font-size:13px; }
+    .field input { padding:8px;border-radius:8px;border:1px solid var(--glass-border); background:transparent;color:var(--glass-text); }
+
+    footer { margin:22px; color:var(--muted); font-size:13px; text-align:center; }
+
+    /* badge */
+    .badge-on { background: linear-gradient(90deg,var(--success), #64d39e); color:#012; padding:6px 8px;border-radius:8px;font-weight:600;}
+    .badge-off { background: rgba(255,255,255,0.04); color:var(--muted); padding:6px 8px;border-radius:8px; font-weight:600; }
+
+    /* small helper */
+    .small { font-size:12px;color:var(--muted); margin-top:6px; }
+
+    /* dark/light toggle */
+    .theme-toggle { display:flex; gap:8px; align-items:center; }
+    .switch { width:44px;height:26px;background:rgba(255,255,255,0.06);border-radius:999px;position:relative;cursor:pointer; }
+    .knob { width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:left .18s ease; }
+    .switch.on { background: linear-gradient(90deg,var(--accent),#7c3aed) }
+    .switch.on .knob { left:21px; background:white; }
+
+  </style>
+</head>
+
+<body data-theme="dark">
+
+  <header>
+    <div class="brand">
+      <div class="logo">BR</div>
+      <div>
+        <h1>Bio Reator — Dashboard V2</h1>
+        <div class="muted">Monitoramento em tempo real</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="muted" id="lastUpdate">Última atualização: --</div>
+
+      <div class="theme-toggle">
+        <div id="themeLabel" class="muted">Dark</div>
+        <div id="themeSwitch" class="switch on" role="button" aria-pressed="true">
+          <div class="knob"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- LEFT SIDE -->
+    <section class="side">
+
+      <!-- STATUS GERAL -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">Status do Sistema</div>
+            <div class="muted small">Leituras e controles</div>
+          </div>
+          <div>
+            <button class="btn" onclick="forcarAtualizacao()">Atualizar ESP32</button>
+          </div>
+        </div>
+
+        <hr style="border:none;height:12px">
+
+        <div class="status-row">
+          <div class="stat">
+            <div class="label">Temperatura</div>
+            <div class="value" id="tempAtual">-- °C</div>
+            <div class="small">Min: <span id="labelTempMin">--</span> · Max: <span id="labelTempMax">--</span></div>
+          </div>
+
+          <div class="stat">
+            <div class="label">OD</div>
+            <div class="value" id="odAtual">--</div>
+            <div class="small">Min: <span id="labelODMin">--</span> · Max: <span id="labelODMax">--</span></div>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="status-row">
+          <div class="stat" style="flex:1;">
+            <div class="label">Distância</div>
+            <div class="value" id="distAtual">-- cm</div>
+            <div class="small">Min: <span id="labelDistMin">--</span> · Max: <span id="labelDistMax">--</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BOMBAS -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-weight:700">Bombas</div>
+          <div class="muted">Rele 1 & 2</div>
+        </div>
+
+        <div style="display:grid;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:600">Bomba 1</div>
+              <div class="muted small">Rele 1 · Temperatura + OD + Período</div>
+              <div class="small">Motivo: <span id="bomba1Motivo">--</span></div>
+            </div>
+            <div id="bomba1Badge" class="badge-off">--</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:600">Bomba 2</div>
+              <div class="muted small">Rele 2 · Distância</div>
+              <div class="small">Motivo: <span id="bomba2Motivo">--</span></div>
+            </div>
+            <div id="bomba2Badge" class="badge-off">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIGURAÇÕES RÁPIDAS -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Configurações</div>
+          <div class="muted small">Alterações salvas no Firebase</div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Temp Máx</label>
+            <input id="inputTempMax" type="number" step="0.1">
+          </div>
+          <div class="field">
+            <label>Temp Min</label>
+            <input id="inputTempMin" type="number" step="0.1">
+          </div>
+
+          <div class="field">
+            <label>OD Máx</label>
+            <input id="inputODMax" type="number" step="0.1">
+          </div>
+          <div class="field">
+            <label>OD Min</label>
+            <input id="inputODMin" type="number" step="0.1">
+          </div>
+
+          <div class="field">
+            <label>Dist Min (cm)</label>
+            <input id="inputDistMin" type="number" step="0.1">
+          </div>
+          <div class="field">
+            <label>Dist Max (cm)</label>
+            <input id="inputDistMax" type="number" step="0.1">
+          </div>
+
+          <div class="field">
+            <label>Minutos ligado (Y)</label>
+            <input id="inputMinLigado" type="number">
+          </div>
+          <div class="field">
+            <label>Minutos desligada (X)</label>
+            <input id="inputMinSem" type="number">
+          </div>
+
+          <div class="field">
+            <label>Período ativação (min)</label>
+            <input id="inputPeriodoAtivacao" type="number">
+          </div>
+          <div class="field">
+            <label>Modo Multiplicação</label>
+            <select id="selectMultiplicacao">
+              <option value="true">Ativo</option>
+              <option value="false">Desativado</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="salvarConfig()">Salvar</button>
+          <button class="btn" style="background:#6b7280" onclick="forcarAtualizacao()">Forçar Atualização</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT: charts and timeline -->
+    <section>
+      <div class="card chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Gráficos</div>
+          <div class="muted small">Últimas 30 leituras</div>
+        </div>
+
+        <div class="charts" style="margin-top:12px">
+          <div style="grid-column: 1 / -1">
+            <canvas id="chartTemp" style="width:100%;height:220px"></canvas>
+          </div>
+          <div>
+            <canvas id="chartOD" style="width:100%;height:180px"></canvas>
+          </div>
+          <div>
+            <canvas id="chartDist" style="width:100%;height:180px"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Logs / Info</div>
+          <div class="muted small">Última atualização do ESP32: <span id="tsNice">--</span></div>
+        </div>
+
+        <div id="logArea" style="margin-top:10px; max-height:240px; overflow:auto; font-size:13px; color:var(--muted)"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    Desenvolvido — Dashboard V2 · Bio Reator · Ajustável
+  </footer>
+
+  <!-- =========================
+       SCRIPTS (Firebase + Logic)
+       ========================= -->
+  <script>
+    // ---------------------------
+    // Firebase config (USE SUA CONFIG)
+    // ---------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBunmzsROUpo8miGHs9lffr70cRwX0cY98",
+      authDomain: "bio-reator.firebaseapp.com",
+      databaseURL: "https://bio-reator-default-rtdb.firebaseio.com",
+      projectId: "bio-reator",
+      storageBucket: "bio-reator.appspot.com",
+      messagingSenderId: "",
+      appId: ""
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ---------------------------
+    // Helpers
+    // ---------------------------
+    const logArea = document.getElementById('logArea');
+    function addLog(msg){
+      const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
+      logArea.innerHTML = `<div>[${t}] ${msg}</div>` + logArea.innerHTML;
+    }
+
+    function toHuman(ts){
+      if(!ts) return "--";
+      try { return new Date(Number(ts)).toLocaleString('pt-BR',{hour12:false}); }
+      catch(e){ return ts; }
+    }
+
+    // ---------------------------
+    // Theme toggle
+    // ---------------------------
+    const themeSwitch = document.getElementById('themeSwitch');
+    const themeLabel = document.getElementById('themeLabel');
+    function setTheme(dark){
+      document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
+      if(dark){ themeSwitch.classList.add('on'); themeLabel.innerText='Dark'; } 
+      else { themeSwitch.classList.remove('on'); themeLabel.innerText='Light'; }
+    }
+    themeSwitch.addEventListener('click', ()=> {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      setTheme(!isDark);
+      localStorage.setItem('dash_theme', (!isDark) ? 'dark' : 'light');
+    });
+    // load saved
+    setTheme(localStorage.getItem('dash_theme') !== 'light');
+
+    // ---------------------------
+    // Charts setup
+    // ---------------------------
+    const maxPoints = 30;
+    const ctxT = document.getElementById('chartTemp').getContext('2d');
+    const ctxO = document.getElementById('chartOD').getContext('2d');
+    const ctxD = document.getElementById('chartDist').getContext('2d');
+
+    const chartTemp = new Chart(ctxT, {
+      type:'line',
+      data:{labels:[],datasets:[{label:'Temp (°C)', data:[], borderColor:'#ff4d4d', backgroundColor:'rgba(255,77,77,0.06)', tension:0.25, pointRadius:2}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}}
+    });
+
+    const chartOD = new Chart(ctxO, {
+      type:'line',
+      data:{labels:[],datasets:[{label:'OD', data:[], borderColor:'#0ea5a4', backgroundColor:'rgba(14,165,164,0.06)', tension:0.25, pointRadius:2}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}}
+    });
+
+    const chartDist = new Chart(ctxD, {
+      type:'line',
+      data:{labels:[],datasets:[{label:'Dist (cm)', data:[], borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.06)', tension:0.25, pointRadius:2}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}}
+    });
+
+    function pushChart(chart, value){
+      const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
+      chart.data.labels.push(t);
+      chart.data.datasets[0].data.push(value);
+      if(chart.data.labels.length>maxPoints){ chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+      chart.update();
+    }
+
+    // ---------------------------
+    // Bind Firebase listeners (status + config)
+    // ---------------------------
+    // status values
+    db.ref('status').on('value', snap=>{
+      const s = snap.val();
+      if(!s) return;
+
+      // readings
+      const temp = s.temperatura ?? null;
+      const od = s.od ?? null;
+      const dist = s.distancia ?? null;
+
+      document.getElementById('tempAtual').innerText = temp!=null ? temp.toFixed(2) + ' °C' : '--';
+      document.getElementById('odAtual').innerText = od!=null ? od.toFixed(2) : '--';
+      document.getElementById('distAtual').innerText = dist!=null ? dist.toFixed(2) + ' cm' : '--';
+
+      // last update
+      if(s.ultima_atualizacao) {
+        document.getElementById('tsNice').innerText = toHuman(s.ultima_atualizacao);
+        document.getElementById('lastUpdate').innerText = 'Última atualização: ' + toHuman(s.ultima_atualizacao);
+      }
+
+      // bombas + motivos
+      const b1 = (s.bomba1 && s.bomba1.toUpperCase && s.bomba1.toUpperCase()==='LIGADA');
+      const b2 = (s.bomba2 && s.bomba2.toUpperCase && s.bomba2.toUpperCase()==='LIGADA');
+
+      document.getElementById('bomba1Badge').className = b1 ? 'badge-on' : 'badge-off';
+      document.getElementById('bomba1Badge').innerText = b1 ? 'Ligada' : 'Desligada';
+      document.getElementById('bomba2Badge').className = b2 ? 'badge-on' : 'badge-off';
+      document.getElementById('bomba2Badge').innerText = b2 ? 'Ligada' : 'Desligada';
+
+      document.getElementById('bomba1Motivo').innerText = s.bomba1_motivo ?? '--';
+      document.getElementById('bomba2Motivo').innerText = s.bomba2_motivo ?? '--';
+
+      // logs
+      addLog(`Temp ${temp ?? '--'} °C · OD ${od ?? '--'} · Dist ${dist ?? '--'} cm · B1:${b1? 'ON':'OFF'} B2:${b2? 'ON':'OFF'}`);
+
+      // push charts
+      if(temp!=null) pushChart(chartTemp, Number(temp));
+      if(od!=null) pushChart(chartOD, Number(od));
+      if(dist!=null) pushChart(chartDist, Number(dist));
+    });
+
+    // config values
+    db.ref('config').on('value', snap=>{
+      const c = snap.val();
+      if(!c) return;
+
+      // populate labels and controls (note naming kept from your RTDB)
+      document.getElementById('labelTempMin').innerText = c.temperatura_min ?? '--';
+      document.getElementById('labelTempMax').innerText = c.temperatura_max ?? '--';
+
+      document.getElementById('labelODMin').innerText = c.od_min ?? '--';
+      document.getElementById('labelODMax').innerText = c.od_max ?? '--';
+
+      document.getElementById('labelDistMin').innerText = c.distancia_min ?? '--';
+      document.getElementById('labelDistMax').innerText = c.distancia_max ?? '--';
+
+      // controls
+      document.getElementById('inputTempMax').value = c.temperatura_max ?? '';
+      document.getElementById('inputTempMin').value = c.temperatura_min ?? '';
+      document.getElementById('inputODMax').value = c.od_max ?? '';
+      document.getElementById('inputODMin').value = c.od_min ?? '';
+      document.getElementById('inputDistMin').value = c.distancia_min ?? '';
+      document.getElementById('inputDistMax').value = c.distancia_max ?? '';
+      document.getElementById('inputMinLigado').value = c.intervalo_ligado ?? '';
+      document.getElementById('inputMinSem').value = c.intervalo_sem_mudanca ?? '';
+      document.getElementById('inputPeriodoAtivacao').value = c.periodo_ativacao ?? '';
+      document.getElementById('selectMultiplicacao').value = (c.multiplicacao ? 'true' : 'false');
+    });
+
+    // ---------------------------
+    // Save config
+    // ---------------------------
+    function salvarConfig(){
+      const obj = {
+        temperatura_max: Number(document.getElementById('inputTempMax').value),
+        temperatura_min: Number(document.getElementById('inputTempMin').value),
+        od_max: Number(document.getElementById('inputODMax').value),
+        od_min: Number(document.getElementById('inputODMin').value),
+        distancia_min: Number(document.getElementById('inputDistMin').value),
+        distancia_max: Number(document.getElementById('inputDistMax').value),
+        intervalo_ligado: Number(document.getElementById('inputMinLigado').value),
+        intervalo_sem_mudanca: Number(document.getElementById('inputMinSem').value),
+        periodo_ativacao: Number(document.getElementById('inputPeriodoAtivacao').value),
+        multiplicacao: document.getElementById('selectMultiplicacao').value === 'true'
+      };
+      db.ref('config').update(obj)
+        .then(()=> addLog('Configurações salvas no Firebase.'))
+        .catch(e=> addLog('Erro ao salvar config: '+e));
+    }
+
+    // ---------------------------
+    // Force update
+    // ---------------------------
+    function forcarAtualizacao(){
+      db.ref('comandos/atualizar').set(firebase.database.ServerValue.TIMESTAMP)
+        .then(()=> addLog('Comando atualizar enviado.'))
+        .catch(e=> addLog('Erro forçar atualização: '+e));
+    }
+
+    // ---------------------------
+    // Init: try to read quick snapshot (optional)
+    // ---------------------------
+    // nothing else—listeners will populate
+
+  </script>
+</body>
+</html>
