@@ -291,12 +291,21 @@
             <input id="inputPeriodoAtivacao" type="number">
           </div>
           <div class="field">
-            <label>Modo Multiplicação</label>
-            <select id="selectMultiplicacao">
-              <option value="true">Ativo</option>
-              <option value="false">Desativado</option>
-            </select>
-          </div>
+		    <label>Modo Multiplicação</label>
+		    <div id="multiplicacaoSwitch" class="switch" role="button">
+			  <div class="knob"></div>
+		    </div>
+		    <div class="small muted" id="multiplicacaoLabel">Desativado</div>
+		  </div>
+		  
+		  <div class="field">
+		    <label>Leitura Distância</label>
+		    <div id="distanciaSwitch" class="switch" role="button">
+			  <div class="knob"></div>
+		    </div>
+		    <div class="small muted" id="distanciaLabel">Desativada</div>
+		  </div>
+
         </div>
 
         <div style="height:12px"></div>
@@ -342,7 +351,7 @@
   </main>
 
   <footer>
-    Desenvolvido — Dashboard V2 · Bio Reator · Ajustável
+    Desenvolvido por Rafael Veloso — Dashboard · Bio Reator · Ajustável
   </footer>
 
   <!-- =========================
@@ -384,18 +393,130 @@
     // ---------------------------
     const themeSwitch = document.getElementById('themeSwitch');
     const themeLabel = document.getElementById('themeLabel');
-    function setTheme(dark){
-      document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
-      if(dark){ themeSwitch.classList.add('on'); themeLabel.innerText='Dark'; } 
-      else { themeSwitch.classList.remove('on'); themeLabel.innerText='Light'; }
-    }
-    themeSwitch.addEventListener('click', ()=> {
-      const isDark = document.body.getAttribute('data-theme') === 'dark';
-      setTheme(!isDark);
-      localStorage.setItem('dash_theme', (!isDark) ? 'dark' : 'light');
-    });
+    function setTheme(isDark){
+	  document.body.setAttribute("data-theme", isDark ? "dark" : "light");
+
+	  if (isDark){
+		themeSwitch.classList.add("on");
+		themeLabel.innerText = "Dark";
+	  } else {
+		themeSwitch.classList.remove("on");
+		themeLabel.innerText = "Light";
+	  }
+	}
+
+    themeSwitch.addEventListener('click', async () => {
+	  const isDark = document.body.getAttribute('data-theme') === 'dark';
+	  const novoTema = isDark ? "light" : "dark";
+
+	  // altera visual
+	  setTheme(novoTema === "dark");
+
+	  // salva local
+	  localStorage.setItem('dash_theme', novoTema);
+
+	  // salva no Firebase
+	  await db.ref("config/tema").set(novoTema);
+
+	  addLog("Tema alterado para: " + novoTema);
+	});
+	
+	const multiplicacaoSwitch = document.getElementById("multiplicacaoSwitch");
+	const multiplicacaoLabel = document.getElementById("multiplicacaoLabel");
+
+	multiplicacaoSwitch.addEventListener("click", async () => {
+	  const ativo = multiplicacaoSwitch.classList.contains("on");
+	  const novo = !ativo;
+
+	  if (novo){
+		multiplicacaoSwitch.classList.add("on");
+		multiplicacaoLabel.innerText = "Ativo";
+	  } else {
+		multiplicacaoSwitch.classList.remove("on");
+		multiplicacaoLabel.innerText = "Desativado";
+	  }
+
+	  await db.ref("config/multiplicacao").set(novo);
+	  addLog("Modo Multiplicação: " + (novo ? "Ativo" : "Desativado"));
+	});
+
+	db.ref("config/multiplicacao").on("value", snap => {
+	  const val = snap.val();
+	  if (val === true){
+		multiplicacaoSwitch.classList.add("on");
+		multiplicacaoLabel.innerText = "Ativo";
+	  } else {
+		multiplicacaoSwitch.classList.remove("on");
+		multiplicacaoLabel.innerText = "Desativado";
+	  }
+	});
+
+	// ---------------------------
+	// Toggle Leitura de Distância (corrigido)
+	// ---------------------------
+	const distanciaSwitch = document.getElementById("distanciaSwitch");
+	const distanciaLabel  = document.getElementById("distanciaLabel");
+
+	distanciaSwitch.addEventListener("click", async () => {
+	  const ativo = distanciaSwitch.classList.contains("on");
+	  const novo = !ativo;
+
+	  if (novo) {
+		distanciaSwitch.classList.add("on");
+		distanciaLabel.innerText = "Ativada";
+	  } else {
+		distanciaSwitch.classList.remove("on");
+		distanciaLabel.innerText = "Desativada";
+	  }
+
+	  // Atualiza corretamente a variável utilizada pelo ESP32
+	  await db.ref("config/permitirLeituraDistancia").set(novo);
+  	  await db.ref("config/bomba2_controle").set(novo);
+	  addLog("Leitura de distância: " + (novo ? "Ativada" : "Desativada"));
+	});
+
+	// Sync com Firebase
+	db.ref("config/permitirLeituraDistancia").on("value", snap => {
+	  const val = snap.val();
+
+	  if (val === true) {
+		distanciaSwitch.classList.add("on");
+		distanciaLabel.innerText = "Ativada";
+	  } else {
+		distanciaSwitch.classList.remove("on");
+		distanciaLabel.innerText = "Desativada";
+	  }
+	});
+	
+	// ---------------------------
+	// Carregar tema do Firebase
+	// ---------------------------
+	db.ref("config/tema").on("value", snap => {
+	  const tema = snap.val();
+
+	  if (!tema) return;   // evita erro se o valor for null
+
+	  const isDark = tema === "dark";
+
+	  // aplica tema na tela
+	  setTheme(isDark);
+
+	  // atualiza toggle e label
+	  themeSwitch.classList.toggle("on", isDark);
+	  themeLabel.innerText = isDark ? "Dark" : "Light";
+
+	  // salva no localStorage também
+	  localStorage.setItem("dash_theme", tema);
+
+	  addLog("Tema carregado do Firebase: " + tema);
+	});
+
+
+
     // load saved
-    setTheme(localStorage.getItem('dash_theme') !== 'light');
+    const temaLocal = localStorage.getItem('dash_theme');
+	if (temaLocal) setTheme(temaLocal === "dark");
+
 
     // ---------------------------
     // Charts setup
