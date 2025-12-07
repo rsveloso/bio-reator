@@ -142,6 +142,32 @@
     .switch.on { background: linear-gradient(90deg,var(--accent),#7c3aed) }
     .switch.on .knob { left:21px; background:white; }
 
+.select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid #999;
+  
+  /* IMPORTANTE para permitir estilizar */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Mantém fundo escuro nos itens */
+.select option {
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
   </style>
 </head>
 
@@ -215,14 +241,14 @@
       <!-- BOMBAS -->
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-weight:700">Bombas</div>
+          <div style="font-weight:700">Reles</div>
           <div class="muted">Rele 1 & 2</div>
         </div>
 
         <div style="display:grid;gap:8px">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-weight:600">Bomba 1</div>
+              <div style="font-weight:600">Bomba</div>
               <div class="muted small">Rele 1 · Temperatura + OD + Período</div>
               <div class="small">Motivo: <span id="bomba1Motivo">--</span></div>
             </div>
@@ -231,7 +257,7 @@
 
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-weight:600">Bomba 2</div>
+              <div style="font-weight:600">Nível</div>
               <div class="muted small">Rele 2 · Distância</div>
               <div class="small">Motivo: <span id="bomba2Motivo">--</span></div>
             </div>
@@ -239,6 +265,28 @@
           </div>
         </div>
       </div>
+	  
+	  <!-- CARD DE COMANDOS RELE1 E RELE2 -->
+	<div class="card">
+	  <h3>Comandos Manuais</h3>
+
+	  <label for="cmdRele1"><strong>Bomba</strong></label>
+	  <select id="cmdRele1" class="select">
+		<option value="AUTO">AUTO</option>
+		<option value="LIGAR">LIGAR</option>
+		<option value="DESLIGAR">DESLIGAR</option>
+	  </select>
+
+	  <label for="cmdRele2" style="margin-top: 12px;"><strong>Nível</strong></label>
+	  <select id="cmdRele2" class="select">
+		<option value="AUTO">AUTO</option>
+		<option value="LIGAR">LIGAR</option>
+		<option value="DESLIGAR">DESLIGAR</option>
+	  </select>
+
+	  <button id="btnSalvarComandos" class="btn">Salvar Comandos</button>
+	</div>
+
 
       <!-- CONFIGURAÇÕES RÁPIDAS -->
       <div class="card">
@@ -311,7 +359,6 @@
         <div style="height:12px"></div>
         <div style="display:flex;gap:8px">
           <button class="btn" onclick="salvarConfig()">Salvar</button>
-          <button class="btn" style="background:#6b7280" onclick="forcarAtualizacao()">Forçar Atualização</button>
         </div>
       </div>
 
@@ -372,6 +419,47 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+	// -----------------------------------------
+	//   SINCRONIZAR COMANDOS MANUAIS (RELE1/2)
+	// -----------------------------------------
+
+	const cmdRele1 = document.getElementById("cmdRele1");
+	const cmdRele2 = document.getElementById("cmdRele2");
+	const btnSalvarComandos = document.getElementById("btnSalvarComandos");
+
+	// Carregar comandos atuais do Firebase ao abrir a página
+	function carregarComandos() {
+	  firebase.database().ref("comandos/rele1").once("value", (snap) => {
+		if (snap.exists()) cmdRele1.value = snap.val();
+	  });
+
+	  firebase.database().ref("comandos/rele2").once("value", (snap) => {
+		if (snap.exists()) cmdRele2.value = snap.val();
+	  });
+	}
+
+	// Salvar comandos no Firebase
+	btnSalvarComandos.addEventListener("click", () => {
+	  firebase.database().ref("comandos/rele1").set(cmdRele1.value);
+	  firebase.database().ref("comandos/rele2").set(cmdRele2.value);
+
+	  alert("Comandos enviados com sucesso!");
+	});
+
+	// Atualizar selects quando ESP32 atualizar o RTDB
+	firebase.database().ref("comandos").on("value", (snap) => {
+	  if (snap.exists()) {
+		const cmds = snap.val();
+
+		if (cmds.rele1) cmdRele1.value = cmds.rele1;
+		if (cmds.rele2) cmdRele2.value = cmds.rele2;
+	  }
+	});
+
+	// Carregar na inicialização
+	carregarComandos();
+
 
     // ---------------------------
     // Helpers
@@ -621,7 +709,7 @@
       document.getElementById('inputMinLigado').value = c.intervalo_ligado ?? '';
       document.getElementById('inputMinSem').value = c.intervalo_sem_mudanca ?? '';
       document.getElementById('inputPeriodoAtivacao').value = c.periodo_ativacao ?? '';
-      document.getElementById('selectMultiplicacao').value = (c.multiplicacao ? 'true' : 'false');
+      document.getElementById('multiplicacaoSwitch').value = (c.multiplicacao ? 'true' : 'false');
     });
 
     // ---------------------------
@@ -638,10 +726,13 @@
         intervalo_ligado: Number(document.getElementById('inputMinLigado').value),
         intervalo_sem_mudanca: Number(document.getElementById('inputMinSem').value),
         periodo_ativacao: Number(document.getElementById('inputPeriodoAtivacao').value),
-        multiplicacao: document.getElementById('selectMultiplicacao').value === 'true'
+        multiplicacao: document.getElementById('multiplicacaoSwitch').value
       };
       db.ref('config').update(obj)
-        .then(()=> addLog('Configurações salvas no Firebase.'))
+        .then(()=> {
+			alert("Configurações salvas no Firebase.");
+			addLog('Configurações salvas no Firebase.');
+		})
         .catch(e=> addLog('Erro ao salvar config: '+e));
     }
 
@@ -650,7 +741,10 @@
     // ---------------------------
     function forcarAtualizacao(){
       db.ref('comandos/atualizar').set(firebase.database.ServerValue.TIMESTAMP)
-        .then(()=> addLog('Comando atualizar enviado.'))
+		.then(()=> {
+			alert("Forçar atualização enviado.");
+			addLog('Forçar atualização enviado.');
+		})
         .catch(e=> addLog('Erro forçar atualização: '+e));
     }
 
