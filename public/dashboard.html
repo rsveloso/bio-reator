@@ -1,433 +1,953 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Bio Reator - Dashboard</title>
+<html lang="pt-BR">
 
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bio Reator — Dashboard V2</title>
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
   <style>
     body {
-      background: #eef2f7;
+      --bg: #0f1724;
+      --card: #0b1220;
+      --muted: #9aa6b2;
+      --accent: #0ea5a4;
+      --danger: #ff4d4d;
+      --success: #28a745;
+      --glass: rgba(255, 255, 255, 0.04);
+      --glass-2: rgba(255, 255, 255, 0.02);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-text: rgba(255, 255, 255, 0.92);
+      --switch-bg: rgba(255, 255, 255, 0.06);
+      --card-bg: #0b1220;
+      --text-color: #e0e0e0;
     }
-    .card {
-      border-radius: 14px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-    }
-    h1 {
-      font-weight: bold;
-    }
-    .config-panel {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-	.label {
-	  font-size: small;
-	  color: darkgrey;
-	}
-	#alertContainer {
-	  position: fixed;
-	  top: 20px;
-	  right: 20px;
-	  z-index: 9999;
-	  width: 300px;
-	}
 
+    /* Light theme palette */
+    body[data-theme="light"] {
+      --bg: #eef7fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #007bff;
+      --danger: #e74343;
+      --success: #2f9e44;
+      --glass: rgba(15, 23, 36, 0.02);
+      --glass-2: rgba(15, 23, 36, 0.01);
+      --glass-border: rgba(15, 23, 36, 0.06);
+      --glass-text: #071428;
+      --switch-bg: rgba(0, 0, 0, 0.4);
+      --card-bg: #ffffff;
+      --text-color: #0b1220;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--glass-text);
+    }
+
+    /* Animated gradient background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background: linear-gradient(120deg, rgba(14, 165, 164, 0.12), rgba(59, 130, 246, 0.06), rgba(99, 102, 241, 0.06));
+      backdrop-filter: blur(10px);
+      animation: bgmove 18s linear infinite;
+    }
+
+    @keyframes bgmove {
+      0% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(-6%) scale(1.02);
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 18px 22px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      color: var(--glass-text);
+    }
+
+    main.container {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 415px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    /* Responsive -> single column on small screens */
+    @media (max-width: 900px) {
+      main.container {
+        grid-template-columns: 1fr !important;
+        padding: 12px;
+      }
+    }
+
+    /* Left column: status & config */
+    .side {
+      position: sticky;
+      top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .side {
+        position: relative !important;
+        top: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 6px 20px rgba(2, 6, 23, 0.35);
+    }
+
+    @media (max-width: 900px) {
+      .card {
+        width: 100% !important;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .card > div[style*="display:flex"][style*="justify-content:space-between"] {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+    }
+
+    .status-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, var(--glass), var(--glass-2));
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Charts area */
+    .charts {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width:900px) {
+      .charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Config form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width:600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      color: var(--glass-text);
+    }
+
+    footer {
+      margin: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    /* badge */
+    .badge-on {
+      background: linear-gradient(90deg, var(--success), #64d39e);
+      color: #012;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .badge-off {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    /* small helper */
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* dark/light toggle */
+    .theme-toggle {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .switch {
+      width: 44px;
+      height: 26px;
+      background: var(--switch-bg);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .knob {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: left .18s ease;
+    }
+
+    .switch.on {
+      background: linear-gradient(90deg, var(--accent), #7c3aed)
+    }
+
+    .switch.on .knob {
+      left: 21px;
+      background: white;
+    }
+
+    .select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      font-size: 15px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      border: 1px solid #999;
+
+      /* IMPORTANTE para permitir estilizar */
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    /* Mantém fundo escuro nos itens */
+    .select option {
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 
-<body class="p-4">
+<body data-theme="dark">
 
-<!-- <div class="container mt-3"> -->
-  <div id="alertContainer"></div>
-<!-- </div> -->
-
-<div class="container">
-
-  <h1 class="mb-4 text-center">Bio Reator – Painel de Controle</h1>
-  
-  <p class="text-center text-muted">
-    Última atualização do ESP32: 
-    <b><span id="ultimaAtualizacao">--</span></b>
-  </p>
-
-  <div class="row g-4">
-
-    <!-- CARD STATUS -->
-    <div class="col-lg-6">
-      <div class="card p-4">
-        <h3>Status Atual</h3>
-        <hr>
-        <p class="fs-4"><b>Temperatura:</b> <span id="tempAtual">--</span> °C</p>
-        <p class="fs-4"><b>OD:</b> <span id="odAtual">--</span> %</p>
-		<p class="fs-4"><b>Distância:</b> <span id="distanciaAtual">--</span> cm</p>
-
-		<hr>
-
-        <p class="fs-4">
-		  <b>Bomba1:</b> <span id="statusBomba1">--</span>
-		  <label class="label"> (Rele 1 | Temp + OD + Período)</label>
-		  <br><small class="text-muted" id="motivoBomba1">--</small>
-		</p>
-
-		<p class="fs-4">
-		  <b>Bomba2:</b> <span id="statusBomba2">--</span> 
-		  <label class="label"> (Rele 2 | Distância)</label>
-		  <br><small class="text-muted" id="motivoBomba2">--</small>
-		</p>
-
-		<hr>
-		<p class="fs-4"><b>Sistema:</b> <span id="statusSistema">--</span></p>
+  <header>
+    <div class="brand">
+      <div class="logo">BR</div>
+      <div>
+        <h1>Bio Reator — Dashboard</h1>
+        <div class="muted">Monitoramento em tempo real</div>
       </div>
     </div>
 
-    <!-- GRÁFICO TEMPERATURA -->
-    <div class="col-lg-6">
-      <div class="card p-4">
-        <h3>Monitoramento da Temperatura</h3>
-        <hr>
-        <canvas id="graficoTemp" height="150"></canvas>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="muted" id="lastUpdate">Última atualização: --</div>
+
+      <div class="theme-toggle">
+        <div id="themeLabel" class="muted">Dark</div>
+        <div id="themeSwitch" class="switch on" role="button" aria-pressed="true">
+          <div class="knob"></div>
+        </div>
       </div>
     </div>
+  </header>
 
-    <!-- GRÁFICO OD -->
-    <div class="col-lg-12">
-      <div class="card p-4">
-        <h3>Monitoramento do Oxigênio Dissolvido (OD)</h3>
-        <hr>
-        <canvas id="graficoOD" height="150"></canvas>
-      </div>
-    </div>
-	
-    <!-- GRÁFICO DISTANCIA -->
-    <div class="col-lg-12">
-      <div class="card p-4">
-        <h3>Monitoramento de Distância</h3>
-        <hr>
-        <canvas id="graficoDist" height="150"></canvas>
-      </div>
-    </div>
+  <main class="container">
+    <!-- LEFT SIDE -->
+    <section class="side">
 
-  </div>
+      <!-- STATUS GERAL -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">Status do Sistema</div>
+            <div class="muted small">Leituras e controles</div>
+          </div>
+          <div>
+            <button class="btn" onclick="forcarAtualizacao()">Atualizar ESP32</button>
+          </div>
+        </div>
 
-  <!-- CONFIGURAÇÕES -->
-  <div class="config-panel mt-4">
-    <h3>Configurações</h3>
-    <hr>
-	
-	<div class="form-check form-switch mb-3">
-	  <input class="form-check-input" type="checkbox" id="chkMultiplicacao" onchange="alterarModoMultiplicacao()">
-	  <label class="form-check-label fs-5">Modo Multiplicação</label>
-	</div>
+        <hr style="border:none;height:12px">
 
-    <div class="row g-3">
+        <div class="status-row">
+          <div class="stat">
+            <div class="label">Temperatura</div>
+            <div class="value" id="tempAtual">-- °C</div>
+            <div class="small">Min: <span id="labelTempMin">--</span> · Max: <span id="labelTempMax">--</span></div>
+          </div>
 
-      <div class="col-md-3">
-        <label class="form-label">Temperatura Máxima</label>
-        <input id="tempMax" type="number" step="0.1" class="form-control">
-      </div>
+          <div class="stat">
+            <div class="label">OD</div>
+            <div class="value" id="odAtual">--</div>
+            <div class="small">Min: <span id="labelODMin">--</span> · Max: <span id="labelODMax">--</span></div>
+          </div>
+        </div>
 
-	  <!-- TEMPERATURA -->
-      <div class="col-md-3">
-        <label class="form-label">Temperatura Mínima</label>
-        <input id="tempMin" type="number" step="0.1" class="form-control">
-      </div>
+        <div style="height:10px"></div>
 
-      <div class="col-md-3">
-        <label class="form-label">Minutos ligado</label>
-        <input id="minLigado" type="number" class="form-control">
+        <div class="status-row">
+          <div class="stat" style="flex:1;">
+            <div class="label">Distância</div>
+            <div class="value" id="distAtual">-- cm</div>
+            <div class="small">Min: <span id="labelDistMin">--</span> · Max: <span id="labelDistMax">--</span></div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="col-md-3">
-        <label class="form-label">Minutos sem mudança</label>
-        <input id="minSem" type="number" class="form-control">
+      <!-- BOMBAS -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-weight:700">Reles</div>
+          <div class="muted">Rele 1 & 2</div>
+        </div>
+
+        <div style="display:grid;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:600">Bomba</div>
+              <div class="muted small">Rele 1 · Temperatura + OD + Período</div>
+              <div class="small">Motivo: <span id="bomba1Motivo">--</span></div>
+            </div>
+            <div id="bomba1Badge" class="badge-off">--</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:600">Nível</div>
+              <div class="muted small">Rele 2 · Distância</div>
+              <div class="small">Motivo: <span id="bomba2Motivo">--</span></div>
+            </div>
+            <div id="bomba2Badge" class="badge-off">--</div>
+          </div>
+        </div>
       </div>
 
-	  <!-- OD -->
-      <div class="col-md-3">
-        <label class="form-label mt-3">OD Mínimo (liga bomba 2)</label>
-        <input id="odMin" type="number" step="0.1" class="form-control">
+      <!-- CARD DE COMANDOS RELE1 E RELE2 -->
+      <div class="card">
+        <h3>Comandos Manuais</h3>
+
+        <label for="cmdRele1"><strong>Bomba</strong></label>
+        <select id="cmdRele1" class="select">
+          <option value="AUTO">AUTO</option>
+          <option value="LIGAR">LIGAR</option>
+          <option value="DESLIGAR">DESLIGAR</option>
+        </select>
+
+        <label for="cmdRele2" style="margin-top: 12px;"><strong>Nível</strong></label>
+        <select id="cmdRele2" class="select">
+          <option value="AUTO">AUTO</option>
+          <option value="LIGAR">LIGAR</option>
+          <option value="DESLIGAR">DESLIGAR</option>
+        </select>
+
+        <button id="btnSalvarComandos" class="btn">Salvar Comandos</button>
       </div>
 
-      <div class="col-md-3">
-        <label class="form-label mt-3">OD Máximo (desliga bomba 2)</label>
-        <input id="odMax" type="number" step="0.1" class="form-control">
+
+      <!-- CONFIGURAÇÕES RÁPIDAS -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Configurações</div>
+          <div class="muted small">Alterações salvas no Firebase</div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Temp Máx</label>
+            <input id="inputTempMax" type="number" step="0.1">
+          </div>
+          <div class="field">
+            <label>Temp Min</label>
+            <input id="inputTempMin" type="number" step="0.1">
+          </div>
+
+          <div class="field">
+            <label>OD Máx</label>
+            <input id="inputODMax" type="number" step="0.1">
+          </div>
+          <div class="field">
+            <label>OD Min</label>
+            <input id="inputODMin" type="number" step="0.1">
+          </div>
+
+          <div class="field">
+            <label>Dist Min (cm)</label>
+            <input id="inputDistMin" type="number" step="0.1">
+          </div>
+          <div class="field">
+            <label>Dist Max (cm)</label>
+            <input id="inputDistMax" type="number" step="0.1">
+          </div>
+
+          <div class="field">
+            <label>Minutos ligado (Y)</label>
+            <input id="inputMinLigado" type="number">
+          </div>
+          <div class="field">
+            <label>Minutos desligada (X)</label>
+            <input id="inputMinSem" type="number">
+          </div>
+
+          <div class="field">
+            <label>Período ativação (min)</label>
+            <input id="inputPeriodoAtivacao" type="number">
+          </div>
+          <div class="field">
+            <label>Modo Multiplicação</label>
+            <div id="multiplicacaoSwitch" class="switch" role="button">
+              <div class="knob"></div>
+            </div>
+            <div class="small muted" id="multiplicacaoLabel">Desativado</div>
+          </div>
+
+          <div class="field">
+            <label>Leitura Distância</label>
+            <div id="distanciaSwitch" class="switch" role="button">
+              <div class="knob"></div>
+            </div>
+            <div class="small muted" id="distanciaLabel">Desativada</div>
+          </div>
+
+        </div>
+
+        <div style="height:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="salvarConfig()">Salvar</button>
+        </div>
       </div>
-	  
-	  
-      <div class="col-md-6">
+
+    </section>
+
+    <!-- RIGHT: charts and timeline -->
+    <section>
+      <div class="card chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Gráficos</div>
+          <div class="muted small">Últimas 30 leituras</div>
+        </div>
+
+        <div class="charts" style="margin-top:12px">
+          <div style="grid-column: 1 / -1">
+            <canvas id="chartTemp" style="width:100%;height:220px"></canvas>
+          </div>
+          <div>
+            <canvas id="chartOD" style="width:100%;height:180px"></canvas>
+          </div>
+          <div>
+            <canvas id="chartDist" style="width:100%;height:180px"></canvas>
+          </div>
+        </div>
       </div>
-	  
-	  <!-- DISTÂNCIA -->
-	  <div class="col-md-3">
-		<label class="form-label mt-3">Distância Mínima (cm) – Liga Bomba2</label>
-		<input id="distMin" type="number" step="0.1" class="form-control">
-	  </div>
 
-	  <div class="col-md-3">
-		<label class="form-label mt-3">Distância Máxima (cm) – Desliga Bomba2</label>
-		<input id="distMax" type="number" step="0.1" class="form-control">
-	  </div>
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Logs / Info</div>
+          <div class="muted small">Última atualização do ESP32: <span id="tsNice">--</span></div>
+        </div>
 
-    </div>
+        <div id="logArea" style="margin-top:10px; max-height:240px; overflow:auto; font-size:13px; color:var(--muted)">
+        </div>
+      </div>
 
-    <button class="btn btn-primary btn-lg mt-4" onclick="salvar()">Salvar Alterações</button>
-	
-    <button class="btn btn-primary btn-lg mt-4" onclick="forcarAtualizacao()">Atualizar ESP32 agora</button>
-  </div>
+    </section>
+  </main>
 
-</div>
+  <footer>
+    Desenvolvido por Rafael Veloso — Dashboard · Bio Reator · Ajustável
+  </footer>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- =========================
+       SCRIPTS (Firebase + Logic)
+       ========================= -->
+  <script>
+    // ---------------------------
+    // Firebase config (USE SUA CONFIG)
+    // ---------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBunmzsROUpo8miGHs9lffr70cRwX0cY98",
+      authDomain: "bio-reator.firebaseapp.com",
+      databaseURL: "https://bio-reator-default-rtdb.firebaseio.com",
+      projectId: "bio-reator",
+      storageBucket: "bio-reator.appspot.com",
+      messagingSenderId: "",
+      appId: ""
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBunmzsROUpo8miGHs9lffr70cRwX0cY98",
-    authDomain: "bio-reator.firebaseapp.com",
-    databaseURL: "https://bio-reator-default-rtdb.firebaseio.com/"
-  };
+    // -----------------------------------------
+    //   SINCRONIZAR COMANDOS MANUAIS (RELE1/2)
+    // -----------------------------------------
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
+    const cmdRele1 = document.getElementById("cmdRele1");
+    const cmdRele2 = document.getElementById("cmdRele2");
+    const btnSalvarComandos = document.getElementById("btnSalvarComandos");
 
-<script>
-  // --------------------------
-  // GRÁFICO TEMPERATURA
-  // --------------------------
-  const ctxTemp = document.getElementById('graficoTemp').getContext('2d');
+    // Carregar comandos atuais do Firebase ao abrir a página
+    function carregarComandos() {
+      firebase.database().ref("comandos/rele1").once("value", (snap) => {
+        if (snap.exists()) cmdRele1.value = snap.val();
+      });
 
-  const graficoTemp = new Chart(ctxTemp, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: "Temperatura (°C)",
-        data: [],
-        borderWidth: 3,
-        borderColor: "#ff4d4d",
-        tension: 0.2
-      }]
+      firebase.database().ref("comandos/rele2").once("value", (snap) => {
+        if (snap.exists()) cmdRele2.value = snap.val();
+      });
     }
-  });
 
-  // --------------------------
-  // GRÁFICO DISTÂNCIA
-  // --------------------------
-  const ctxDist = document.getElementById('graficoDist').getContext('2d');
+    // Salvar comandos no Firebase
+    btnSalvarComandos.addEventListener("click", () => {
+      firebase.database().ref("comandos/rele1").set(cmdRele1.value);
+      firebase.database().ref("comandos/rele2").set(cmdRele2.value);
 
-  const graficoDist = new Chart(ctxDist, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: "Distância (cm)",
-        data: [],
-        borderWidth: 3,
-        borderColor: "#007bff",
-        tension: 0.2
-      }]
-    }
-  });
-
-  // --------------------------
-  // GRÁFICO OD
-  // --------------------------
-  const ctxOD = document.getElementById('graficoOD').getContext('2d');
-
-  const graficoOD = new Chart(ctxOD, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: "OD (%)",
-        data: [],
-        borderWidth: 3,
-        borderColor: "#28a745",
-        tension: 0.2
-      }]
-    }
-  });
-
-  // --------------------------
-  // STATUS REMOTO
-  // --------------------------
-
-  db.ref("status/temperatura").on("value", snap => {
-    const v = snap.val();
-    document.getElementById("tempAtual").innerText = v ?? "--";
-
-    if (v != null) {
-      const t = new Date().toLocaleTimeString("pt-BR", {hour12: false});
-      graficoTemp.data.labels.push(t);
-      graficoTemp.data.datasets[0].data.push(v);
-
-      if (graficoTemp.data.labels.length > 20) {
-        graficoTemp.data.labels.shift();
-        graficoTemp.data.datasets[0].data.shift();
-      }
-
-      graficoTemp.update();
-    }
-  });
-
-  db.ref("status/od").on("value", snap => {
-    const v = snap.val();
-    document.getElementById("odAtual").innerText = v ?? "--";
-
-    if (v != null) {
-      const t = new Date().toLocaleTimeString("pt-BR", {hour12: false});
-      graficoOD.data.labels.push(t);
-      graficoOD.data.datasets[0].data.push(v);
-
-      if (graficoOD.data.labels.length > 20) {
-        graficoOD.data.labels.shift();
-        graficoOD.data.datasets[0].data.shift();
-      }
-
-      graficoOD.update();
-    }
-  });
-  
-  db.ref("status/distancia").on("value", snap => {
-	const d = snap.val();
-    document.getElementById("distanciaAtual").innerText = d ?? "--";
-
-    if (d != null) {
-      const t = new Date().toLocaleTimeString("pt-BR", {hour12: false});
-      graficoDist.data.labels.push(t);
-      graficoDist.data.datasets[0].data.push(d);
-
-      if (graficoDist.data.labels.length > 20) {
-        graficoDist.data.labels.shift();
-        graficoDist.data.datasets[0].data.shift();
-      }
-
-      graficoDist.update();
-    }
-  });
-
-  db.ref("status/bomba1").on("value", snap => {
-    const estado = snap.val();
-    document.getElementById("statusBomba1").innerText =
-      estado == "LIGADA" ? "Ligada" : "Desligada";
-  });
-  
-  db.ref("status/bomba2").on("value", snap => {
-    const estado = snap.val();
-    document.getElementById("statusBomba2").innerText =
-      estado == "LIGADA" ? "Ligada" : "Desligada";
-  });
-  
-  db.ref("status/bomba1_motivo").on("value", snap => {
-	document.getElementById("motivoBomba1").innerText = snap.val() ?? "--";
-  });
-
-  db.ref("status/bomba2_motivo").on("value", snap => {
-	document.getElementById("motivoBomba2").innerText = snap.val() ?? "--";
-  });
-
-  db.ref("status/sistema").on("value", snap => {
-    document.getElementById("statusSistema").innerText = snap.val().toUpperCase() ?? "--";
-  });
-  
-  db.ref("status/ultima_atualizacao").on("value", snap => {
-    const v = snap.val();
-    if (!v) return;
-
-    const data = new Date(v).toLocaleString("pt-BR", { hour12: false });
-    document.getElementById("ultimaAtualizacao").innerText = data;
-  });
-
-  // --------------------------
-  // CONFIGURAÇÕES
-  // --------------------------
-  db.ref("config").on("value", snap => {
-    const c = snap.val();
-    if (!c) return;
-
-    document.getElementById("tempMax").value = c.temperatura_max ?? "";
-    document.getElementById("tempMin").value = c.temperatura_min ?? "";
-    document.getElementById("minLigado").value = c.intervalo_ligado ?? "";
-    document.getElementById("minSem").value = c.intervalo_sem_mudanca ?? "";
-    document.getElementById("odMin").value = c.od_min ?? "";
-    document.getElementById("odMax").value = c.od_max ?? "";
-	document.getElementById("distMin").value = c.distancia_min ?? "";
-	document.getElementById("distMax").value = c.distancia_max ?? "";
-	document.getElementById("chkMultiplicacao").checked = snap.val().multiplicacao ?? false;
-  });
-
-  function mostrarAlerta(mensagem, tipo = "success") {
-    const id = "alert_" + Date.now();
-
-    const html = `
-	  <div id="${id}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
-	    ${mensagem}
-	    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-	  </div>
-    `;
-
-    const container = document.getElementById("alertContainer");
-    container.insertAdjacentHTML("beforeend", html);
-
-    // Remover automaticamente após 5 segundos
-    setTimeout(() => {
-	  const alertEl = document.getElementById(id);
-	  if (alertEl) {
-	    alertEl.classList.remove("show");
-	    setTimeout(() => alertEl.remove(), 150);
-	  }
-    }, 5000);
-  }
-
-
-  function salvar() {
-    db.ref("config").update({
-      temperatura_max: parseFloat(document.getElementById("tempMax").value),
-      temperatura_min: parseFloat(document.getElementById("tempMin").value),
-      intervalo_ligado: parseInt(document.getElementById("minLigado").value),
-      intervalo_sem_mudanca: parseInt(document.getElementById("minSem").value),
-      od_min: parseFloat(document.getElementById("odMin").value),
-      od_max: parseFloat(document.getElementById("odMax").value),
-	  distancia_min: parseFloat(document.getElementById("distMin").value),
-	  distancia_max: parseFloat(document.getElementById("distMax").value)
+      alert("Comandos enviados com sucesso!");
     });
 
-    mostrarAlerta("Configurações salvas com sucesso!", "success");
-  }
-  
-  function forcarAtualizacao() {
-	db.ref("comandos/atualizar").set(firebase.database.ServerValue.TIMESTAMP)
-	  .then(() => {
-	    mostrarAlerta("Comando enviado! O ESP32 irá atualizar agora.", "success");
-	  })
-	  .catch(err => {
-	    console.error(err);
-	    mostrarAlerta("Erro ao enviar comando.", "danger");
-	  });
-  }
-  
-  function alterarModoMultiplicacao() {
-    const ativo = document.getElementById("chkMultiplicacao").checked;
+    // Atualizar selects quando ESP32 atualizar o RTDB
+    firebase.database().ref("comandos").on("value", (snap) => {
+      if (snap.exists()) {
+        const cmds = snap.val();
 
-	db.ref("config").update({
-	  multiplicacao: ativo
-	});
+        if (cmds.rele1) cmdRele1.value = cmds.rele1;
+        if (cmds.rele2) cmdRele2.value = cmds.rele2;
+      }
+    });
 
-	db.ref("status").update({
-	  sistema: ativo ? "ligado" : "desligado"
-	});
-  }
+    // Carregar na inicialização
+    carregarComandos();
 
-</script>
 
+    // ---------------------------
+    // Helpers
+    // ---------------------------
+    const logArea = document.getElementById('logArea');
+    function addLog(msg) {
+      const t = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+      logArea.innerHTML = `<div>[${t}] ${msg}</div>` + logArea.innerHTML;
+    }
+
+    function toHuman(ts) {
+      if (!ts) return "--";
+      try { return new Date(Number(ts)).toLocaleString('pt-BR', { hour12: false }); }
+      catch (e) { return ts; }
+    }
+
+    // ---------------------------
+    // Theme toggle
+    // ---------------------------
+    const themeSwitch = document.getElementById('themeSwitch');
+    const themeLabel = document.getElementById('themeLabel');
+    function setTheme(isDark) {
+      document.body.setAttribute("data-theme", isDark ? "dark" : "light");
+
+      if (isDark) {
+        themeSwitch.classList.add("on");
+        themeLabel.innerText = "Dark";
+      } else {
+        themeSwitch.classList.remove("on");
+        themeLabel.innerText = "Light";
+      }
+    }
+
+    themeSwitch.addEventListener('click', async () => {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const novoTema = isDark ? "light" : "dark";
+
+      // altera visual
+      setTheme(novoTema === "dark");
+
+      // salva local
+      localStorage.setItem('dash_theme', novoTema);
+
+      // salva no Firebase
+      await db.ref("config/tema").set(novoTema);
+
+      addLog("Tema alterado para: " + novoTema);
+    });
+
+    const multiplicacaoSwitch = document.getElementById("multiplicacaoSwitch");
+    const multiplicacaoLabel = document.getElementById("multiplicacaoLabel");
+
+    multiplicacaoSwitch.addEventListener("click", async () => {
+      const ativo = multiplicacaoSwitch.classList.contains("on");
+      const novo = !ativo;
+
+      if (novo) {
+        multiplicacaoSwitch.classList.add("on");
+        multiplicacaoLabel.innerText = "Ativo";
+      } else {
+        multiplicacaoSwitch.classList.remove("on");
+        multiplicacaoLabel.innerText = "Desativado";
+      }
+
+      await db.ref("config/multiplicacao").set(novo);
+      addLog("Modo Multiplicação: " + (novo ? "Ativo" : "Desativado"));
+    });
+
+    db.ref("config/multiplicacao").on("value", snap => {
+      const val = snap.val();
+      if (val === true) {
+        multiplicacaoSwitch.classList.add("on");
+        multiplicacaoLabel.innerText = "Ativo";
+      } else {
+        multiplicacaoSwitch.classList.remove("on");
+        multiplicacaoLabel.innerText = "Desativado";
+      }
+    });
+
+    // ---------------------------
+    // Toggle Leitura de Distância (corrigido)
+    // ---------------------------
+    const distanciaSwitch = document.getElementById("distanciaSwitch");
+    const distanciaLabel = document.getElementById("distanciaLabel");
+
+    distanciaSwitch.addEventListener("click", async () => {
+      const ativo = distanciaSwitch.classList.contains("on");
+      const novo = !ativo;
+
+      if (novo) {
+        distanciaSwitch.classList.add("on");
+        distanciaLabel.innerText = "Ativada";
+      } else {
+        distanciaSwitch.classList.remove("on");
+        distanciaLabel.innerText = "Desativada";
+      }
+
+      // Atualiza corretamente a variável utilizada pelo ESP32
+      await db.ref("config/permitirLeituraDistancia").set(novo);
+      await db.ref("config/bomba2_controle").set(novo);
+      addLog("Leitura de distância: " + (novo ? "Ativada" : "Desativada"));
+    });
+
+    // Sync com Firebase
+    db.ref("config/permitirLeituraDistancia").on("value", snap => {
+      const val = snap.val();
+
+      if (val === true) {
+        distanciaSwitch.classList.add("on");
+        distanciaLabel.innerText = "Ativada";
+      } else {
+        distanciaSwitch.classList.remove("on");
+        distanciaLabel.innerText = "Desativada";
+      }
+    });
+
+    // ---------------------------
+    // Carregar tema do Firebase
+    // ---------------------------
+    db.ref("config/tema").on("value", snap => {
+      const tema = snap.val();
+
+      if (!tema) return;   // evita erro se o valor for null
+
+      const isDark = tema === "dark";
+
+      // aplica tema na tela
+      setTheme(isDark);
+
+      // atualiza toggle e label
+      themeSwitch.classList.toggle("on", isDark);
+      themeLabel.innerText = isDark ? "Dark" : "Light";
+
+      // salva no localStorage também
+      localStorage.setItem("dash_theme", tema);
+
+      addLog("Tema carregado do Firebase: " + tema);
+    });
+
+
+
+    // load saved
+    const temaLocal = localStorage.getItem('dash_theme');
+    if (temaLocal) setTheme(temaLocal === "dark");
+
+
+    // ---------------------------
+    // Charts setup
+    // ---------------------------
+    const maxPoints = 30;
+    const ctxT = document.getElementById('chartTemp').getContext('2d');
+    const ctxO = document.getElementById('chartOD').getContext('2d');
+    const ctxD = document.getElementById('chartDist').getContext('2d');
+
+    const chartTemp = new Chart(ctxT, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Temp (°C)', data: [], borderColor: '#ff4d4d', backgroundColor: 'rgba(255,77,77,0.06)', tension: 0.25, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+    });
+
+    const chartOD = new Chart(ctxO, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'OD', data: [], borderColor: '#0ea5a4', backgroundColor: 'rgba(14,165,164,0.06)', tension: 0.25, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+    });
+
+    const chartDist = new Chart(ctxD, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Dist (cm)', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.06)', tension: 0.25, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+    });
+
+    function pushChart(chart, value) {
+      const t = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+      chart.data.labels.push(t);
+      chart.data.datasets[0].data.push(value);
+      if (chart.data.labels.length > maxPoints) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+      chart.update();
+    }
+
+    // ---------------------------
+    // Bind Firebase listeners (status + config)
+    // ---------------------------
+    // status values
+    db.ref('status').on('value', snap => {
+      const s = snap.val();
+      if (!s) return;
+
+      // readings
+      const temp = s.temperatura ?? null;
+      const od = s.od ?? null;
+      const dist = s.distancia ?? null;
+
+      document.getElementById('tempAtual').innerText = temp != null ? temp.toFixed(2) + ' °C' : '--';
+      document.getElementById('odAtual').innerText = od != null ? od.toFixed(2) : '--';
+      document.getElementById('distAtual').innerText = dist != null ? dist.toFixed(2) + ' cm' : '--';
+
+      // last update
+      if (s.ultima_atualizacao) {
+        document.getElementById('tsNice').innerText = toHuman(s.ultima_atualizacao);
+        document.getElementById('lastUpdate').innerText = 'Última atualização: ' + toHuman(s.ultima_atualizacao);
+      }
+
+      // bombas + motivos
+      const b1 = (s.bomba1 && s.bomba1.toUpperCase && s.bomba1.toUpperCase() === 'LIGADA');
+      const b2 = (s.bomba2 && s.bomba2.toUpperCase && s.bomba2.toUpperCase() === 'LIGADA');
+
+      document.getElementById('bomba1Badge').className = b1 ? 'badge-on' : 'badge-off';
+      document.getElementById('bomba1Badge').innerText = b1 ? 'Ligada' : 'Desligada';
+      document.getElementById('bomba2Badge').className = b2 ? 'badge-on' : 'badge-off';
+      document.getElementById('bomba2Badge').innerText = b2 ? 'Ligada' : 'Desligada';
+
+      document.getElementById('bomba1Motivo').innerText = s.bomba1_motivo ?? '--';
+      document.getElementById('bomba2Motivo').innerText = s.bomba2_motivo ?? '--';
+
+      // logs
+      addLog(`Temp ${temp ?? '--'} °C · OD ${od ?? '--'} · Dist ${dist ?? '--'} cm · B1:${b1 ? 'ON' : 'OFF'} B2:${b2 ? 'ON' : 'OFF'}`);
+
+      // push charts
+      if (temp != null) pushChart(chartTemp, Number(temp));
+      if (od != null) pushChart(chartOD, Number(od));
+      if (dist != null) pushChart(chartDist, Number(dist));
+    });
+
+    // config values
+    db.ref('config').on('value', snap => {
+      const c = snap.val();
+      if (!c) return;
+
+      // populate labels and controls (note naming kept from your RTDB)
+      document.getElementById('labelTempMin').innerText = c.temperatura_min ?? '--';
+      document.getElementById('labelTempMax').innerText = c.temperatura_max ?? '--';
+
+      document.getElementById('labelODMin').innerText = c.od_min ?? '--';
+      document.getElementById('labelODMax').innerText = c.od_max ?? '--';
+
+      document.getElementById('labelDistMin').innerText = c.distancia_min ?? '--';
+      document.getElementById('labelDistMax').innerText = c.distancia_max ?? '--';
+
+      // controls
+      document.getElementById('inputTempMax').value = c.temperatura_max ?? '';
+      document.getElementById('inputTempMin').value = c.temperatura_min ?? '';
+      document.getElementById('inputODMax').value = c.od_max ?? '';
+      document.getElementById('inputODMin').value = c.od_min ?? '';
+      document.getElementById('inputDistMin').value = c.distancia_min ?? '';
+      document.getElementById('inputDistMax').value = c.distancia_max ?? '';
+      document.getElementById('inputMinLigado').value = c.intervalo_ligado ?? '';
+      document.getElementById('inputMinSem').value = c.intervalo_sem_mudanca ?? '';
+      document.getElementById('inputPeriodoAtivacao').value = c.periodo_ativacao ?? '';
+      document.getElementById('multiplicacaoSwitch').value = (c.multiplicacao ? 'true' : 'false');
+    });
+
+    // ---------------------------
+    // Save config
+    // ---------------------------
+    function salvarConfig() {
+      const obj = {
+        temperatura_max: Number(document.getElementById('inputTempMax').value),
+        temperatura_min: Number(document.getElementById('inputTempMin').value),
+        od_max: Number(document.getElementById('inputODMax').value),
+        od_min: Number(document.getElementById('inputODMin').value),
+        distancia_min: Number(document.getElementById('inputDistMin').value),
+        distancia_max: Number(document.getElementById('inputDistMax').value),
+        intervalo_ligado: Number(document.getElementById('inputMinLigado').value),
+        intervalo_sem_mudanca: Number(document.getElementById('inputMinSem').value),
+        periodo_ativacao: Number(document.getElementById('inputPeriodoAtivacao').value),
+        multiplicacao: document.getElementById('multiplicacaoSwitch').value === 'true'
+      };
+      db.ref('config').update(obj)
+        .then(() => {
+          alert("Configurações salvas no Firebase.");
+          addLog('Configurações salvas no Firebase.');
+        })
+        .catch(e => addLog('Erro ao salvar config: ' + e));
+    }
+
+    // ---------------------------
+    // Force update
+    // ---------------------------
+    function forcarAtualizacao() {
+      db.ref('comandos/atualizar').set(firebase.database.ServerValue.TIMESTAMP)
+        .then(() => {
+          alert("Forçar atualização enviado.");
+          addLog('Forçar atualização enviado.');
+        })
+        .catch(e => addLog('Erro forçar atualização: ' + e));
+    }
+
+    // ---------------------------
+    // Init: try to read quick snapshot (optional)
+    // ---------------------------
+    // nothing else—listeners will populate
+
+  </script>
 </body>
+
 </html>
