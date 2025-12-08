@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -16,158 +17,350 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      --bg:#0f1724;
-      --card:#0b1220;
-      --muted:#9aa6b2;
-      --accent:#0ea5a4;
-      --danger:#ff4d4d;
-      --success:#28a745;
-      --glass: rgba(255,255,255,0.04);
-      --glass-2: rgba(255,255,255,0.02);
-      --glass-border: rgba(255,255,255,0.06);
-      --glass-text: rgba(255,255,255,0.92);
+    body {
+      --bg: #0f1724;
+      --card: #0b1220;
+      --muted: #9aa6b2;
+      --accent: #0ea5a4;
+      --danger: #ff4d4d;
+      --success: #28a745;
+      --glass: rgba(255, 255, 255, 0.04);
+      --glass-2: rgba(255, 255, 255, 0.02);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-text: rgba(255, 255, 255, 0.92);
+      --switch-bg: rgba(255, 255, 255, 0.06);
+      --card-bg: #0b1220;
+      --text-color: #e0e0e0;
     }
 
     /* Light theme palette */
-    :root[data-theme="light"]{
+    body[data-theme="light"] {
       --bg: #eef7fb;
       --card: #ffffff;
       --muted: #6b7280;
       --accent: #007bff;
       --danger: #e74343;
       --success: #2f9e44;
-      --glass: rgba(15,23,36,0.02);
-      --glass-2: rgba(15,23,36,0.01);
-      --glass-border: rgba(15,23,36,0.06);
+      --glass: rgba(15, 23, 36, 0.02);
+      --glass-2: rgba(15, 23, 36, 0.01);
+      --glass-border: rgba(15, 23, 36, 0.06);
       --glass-text: #071428;
+      --switch-bg: rgba(0, 0, 0, 0.4);
+      --card-bg: #ffffff;
+      --text-color: #0b1220;
     }
 
-    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--glass-text);}
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--glass-text);
+    }
 
     /* Animated gradient background */
-    body::before{
-      content:"";
-      position:fixed;inset:0;z-index:-2;
-      background: linear-gradient(120deg, rgba(14,165,164,0.12), rgba(59,130,246,0.06), rgba(99,102,241,0.06));
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background: linear-gradient(120deg, rgba(14, 165, 164, 0.12), rgba(59, 130, 246, 0.06), rgba(99, 102, 241, 0.06));
       backdrop-filter: blur(10px);
       animation: bgmove 18s linear infinite;
     }
+
     @keyframes bgmove {
-      0%{transform:translateY(0) scale(1);}
-      50%{transform:translateY(-6%) scale(1.02);}
-      100%{transform:translateY(0) scale(1);}
+      0% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(-6%) scale(1.02);
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+      }
     }
 
-    header{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 22px;
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 18px 22px;
     }
-    .brand { display:flex;gap:12px;align-items:center;}
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
     .logo {
-      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);
-      display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,0.2);
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
     }
-    h1{font-size:18px;margin:0;color:var(--glass-text);}
 
-    main.container{
-      padding:20px;
-      display:grid;
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      color: var(--glass-text);
+    }
+
+    main.container {
+      padding: 20px;
+      display: grid;
       grid-template-columns: 415px 1fr;
-      gap:18px;
-      align-items:start;
+      gap: 18px;
+      align-items: start;
     }
 
     /* Responsive -> single column on small screens */
-    @media (max-width: 900px){
-      main.container{grid-template-columns: 1fr; padding:12px;}
+    @media (max-width: 900px) {
+      main.container {
+        grid-template-columns: 1fr !important;
+        padding: 12px;
+      }
     }
 
     /* Left column: status & config */
     .side {
-      position:sticky; top:18px;
-      display:flex;flex-direction:column;gap:16px;
+      position: sticky;
+      top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .side {
+        position: relative !important;
+        top: 0 !important;
+        width: 100% !important;
+      }
     }
 
     .card {
-      background:var(--card);
-      border-radius:12px;
-      padding:14px;
-      border:1px solid var(--glass-border);
-      box-shadow: 0 6px 20px rgba(2,6,23,0.35);
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 6px 20px rgba(2, 6, 23, 0.35);
     }
 
-    .status-row{display:flex;gap:12px;align-items:center;}
-    .stat {
-      flex:1;
-      padding:10px;border-radius:10px;background:linear-gradient(180deg,var(--glass),var(--glass-2));
-      border:1px solid rgba(255,255,255,0.03);
+    @media (max-width: 900px) {
+      .card {
+        width: 100% !important;
+      }
     }
-    .stat .label { color:var(--muted); font-size:12px; display:block; margin-bottom:6px; }
-    .stat .value { font-weight:700; font-size:20px; }
+
+    @media (max-width: 600px) {
+      .card > div[style*="display:flex"][style*="justify-content:space-between"] {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+    }
+
+    .status-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, var(--glass), var(--glass-2));
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      font-weight: 700;
+      font-size: 20px;
+    }
 
     .btn {
-      display:inline-block;padding:10px 14px;border-radius:10px;background:var(--accent);color:white;border:0;cursor:pointer;
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      border: 0;
+      cursor: pointer;
     }
 
-    .muted { color:var(--muted); font-size:13px; }
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
 
     /* Charts area */
-    .charts { display:grid; gap:14px; grid-template-columns: repeat(2, 1fr); }
-    @media (max-width:900px){ .charts{grid-template-columns:1fr;} }
+    .charts {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, 1fr);
+    }
 
-    .chart-card { padding:12px; display:flex;flex-direction:column; gap:8px; }
+    @media (max-width:900px) {
+      .charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
     /* Config form */
-    .form-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:8px; }
-    @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
 
-    .field { display:flex;flex-direction:column; gap:6px; }
-    .field label { color:var(--muted); font-size:13px; }
-    .field input { padding:8px;border-radius:8px;border:1px solid var(--glass-border); background:transparent;color:var(--glass-text); }
+    @media (max-width:600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
 
-    footer { margin:22px; color:var(--muted); font-size:13px; text-align:center; }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      color: var(--glass-text);
+    }
+
+    footer {
+      margin: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
 
     /* badge */
-    .badge-on { background: linear-gradient(90deg,var(--success), #64d39e); color:#012; padding:6px 8px;border-radius:8px;font-weight:600;}
-    .badge-off { background: rgba(255,255,255,0.04); color:var(--muted); padding:6px 8px;border-radius:8px; font-weight:600; }
+    .badge-on {
+      background: linear-gradient(90deg, var(--success), #64d39e);
+      color: #012;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .badge-off {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
 
     /* small helper */
-    .small { font-size:12px;color:var(--muted); margin-top:6px; }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
 
     /* dark/light toggle */
-    .theme-toggle { display:flex; gap:8px; align-items:center; }
-    .switch { width:44px;height:26px;background:rgba(255,255,255,0.06);border-radius:999px;position:relative;cursor:pointer; }
-    .knob { width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:left .18s ease; }
-    .switch.on { background: linear-gradient(90deg,var(--accent),#7c3aed) }
-    .switch.on .knob { left:21px; background:white; }
+    .theme-toggle {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
 
-.select {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  font-size: 15px;
-  background: var(--card-bg);
-  color: var(--text-color);
-  border: 1px solid #999;
-  
-  /* IMPORTANTE para permitir estilizar */
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
+    .switch {
+      width: 44px;
+      height: 26px;
+      background: var(--switch-bg);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+    }
 
-/* Mantém fundo escuro nos itens */
-.select option {
-  background: var(--card-bg);
-  color: var(--text-color);
-}
+    .knob {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: left .18s ease;
+    }
 
-.btn:hover {
-  opacity: 0.9;
-}
+    .switch.on {
+      background: linear-gradient(90deg, var(--accent), #7c3aed)
+    }
 
+    .switch.on .knob {
+      left: 21px;
+      background: white;
+    }
+
+    .select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      font-size: 15px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      border: 1px solid #999;
+
+      /* IMPORTANTE para permitir estilizar */
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    /* Mantém fundo escuro nos itens */
+    .select option {
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 
@@ -177,7 +370,7 @@
     <div class="brand">
       <div class="logo">BR</div>
       <div>
-        <h1>Bio Reator — Dashboard V2</h1>
+        <h1>Bio Reator — Dashboard</h1>
         <div class="muted">Monitoramento em tempo real</div>
       </div>
     </div>
@@ -265,27 +458,27 @@
           </div>
         </div>
       </div>
-	  
-	  <!-- CARD DE COMANDOS RELE1 E RELE2 -->
-	<div class="card">
-	  <h3>Comandos Manuais</h3>
 
-	  <label for="cmdRele1"><strong>Bomba</strong></label>
-	  <select id="cmdRele1" class="select">
-		<option value="AUTO">AUTO</option>
-		<option value="LIGAR">LIGAR</option>
-		<option value="DESLIGAR">DESLIGAR</option>
-	  </select>
+      <!-- CARD DE COMANDOS RELE1 E RELE2 -->
+      <div class="card">
+        <h3>Comandos Manuais</h3>
 
-	  <label for="cmdRele2" style="margin-top: 12px;"><strong>Nível</strong></label>
-	  <select id="cmdRele2" class="select">
-		<option value="AUTO">AUTO</option>
-		<option value="LIGAR">LIGAR</option>
-		<option value="DESLIGAR">DESLIGAR</option>
-	  </select>
+        <label for="cmdRele1"><strong>Bomba</strong></label>
+        <select id="cmdRele1" class="select">
+          <option value="AUTO">AUTO</option>
+          <option value="LIGAR">LIGAR</option>
+          <option value="DESLIGAR">DESLIGAR</option>
+        </select>
 
-	  <button id="btnSalvarComandos" class="btn">Salvar Comandos</button>
-	</div>
+        <label for="cmdRele2" style="margin-top: 12px;"><strong>Nível</strong></label>
+        <select id="cmdRele2" class="select">
+          <option value="AUTO">AUTO</option>
+          <option value="LIGAR">LIGAR</option>
+          <option value="DESLIGAR">DESLIGAR</option>
+        </select>
+
+        <button id="btnSalvarComandos" class="btn">Salvar Comandos</button>
+      </div>
 
 
       <!-- CONFIGURAÇÕES RÁPIDAS -->
@@ -339,20 +532,20 @@
             <input id="inputPeriodoAtivacao" type="number">
           </div>
           <div class="field">
-		    <label>Modo Multiplicação</label>
-		    <div id="multiplicacaoSwitch" class="switch" role="button">
-			  <div class="knob"></div>
-		    </div>
-		    <div class="small muted" id="multiplicacaoLabel">Desativado</div>
-		  </div>
-		  
-		  <div class="field">
-		    <label>Leitura Distância</label>
-		    <div id="distanciaSwitch" class="switch" role="button">
-			  <div class="knob"></div>
-		    </div>
-		    <div class="small muted" id="distanciaLabel">Desativada</div>
-		  </div>
+            <label>Modo Multiplicação</label>
+            <div id="multiplicacaoSwitch" class="switch" role="button">
+              <div class="knob"></div>
+            </div>
+            <div class="small muted" id="multiplicacaoLabel">Desativado</div>
+          </div>
+
+          <div class="field">
+            <label>Leitura Distância</label>
+            <div id="distanciaSwitch" class="switch" role="button">
+              <div class="knob"></div>
+            </div>
+            <div class="small muted" id="distanciaLabel">Desativada</div>
+          </div>
 
         </div>
 
@@ -391,7 +584,8 @@
           <div class="muted small">Última atualização do ESP32: <span id="tsNice">--</span></div>
         </div>
 
-        <div id="logArea" style="margin-top:10px; max-height:240px; overflow:auto; font-size:13px; color:var(--muted)"></div>
+        <div id="logArea" style="margin-top:10px; max-height:240px; overflow:auto; font-size:13px; color:var(--muted)">
+        </div>
       </div>
 
     </section>
@@ -420,60 +614,60 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-	// -----------------------------------------
-	//   SINCRONIZAR COMANDOS MANUAIS (RELE1/2)
-	// -----------------------------------------
+    // -----------------------------------------
+    //   SINCRONIZAR COMANDOS MANUAIS (RELE1/2)
+    // -----------------------------------------
 
-	const cmdRele1 = document.getElementById("cmdRele1");
-	const cmdRele2 = document.getElementById("cmdRele2");
-	const btnSalvarComandos = document.getElementById("btnSalvarComandos");
+    const cmdRele1 = document.getElementById("cmdRele1");
+    const cmdRele2 = document.getElementById("cmdRele2");
+    const btnSalvarComandos = document.getElementById("btnSalvarComandos");
 
-	// Carregar comandos atuais do Firebase ao abrir a página
-	function carregarComandos() {
-	  firebase.database().ref("comandos/rele1").once("value", (snap) => {
-		if (snap.exists()) cmdRele1.value = snap.val();
-	  });
+    // Carregar comandos atuais do Firebase ao abrir a página
+    function carregarComandos() {
+      firebase.database().ref("comandos/rele1").once("value", (snap) => {
+        if (snap.exists()) cmdRele1.value = snap.val();
+      });
 
-	  firebase.database().ref("comandos/rele2").once("value", (snap) => {
-		if (snap.exists()) cmdRele2.value = snap.val();
-	  });
-	}
+      firebase.database().ref("comandos/rele2").once("value", (snap) => {
+        if (snap.exists()) cmdRele2.value = snap.val();
+      });
+    }
 
-	// Salvar comandos no Firebase
-	btnSalvarComandos.addEventListener("click", () => {
-	  firebase.database().ref("comandos/rele1").set(cmdRele1.value);
-	  firebase.database().ref("comandos/rele2").set(cmdRele2.value);
+    // Salvar comandos no Firebase
+    btnSalvarComandos.addEventListener("click", () => {
+      firebase.database().ref("comandos/rele1").set(cmdRele1.value);
+      firebase.database().ref("comandos/rele2").set(cmdRele2.value);
 
-	  alert("Comandos enviados com sucesso!");
-	});
+      alert("Comandos enviados com sucesso!");
+    });
 
-	// Atualizar selects quando ESP32 atualizar o RTDB
-	firebase.database().ref("comandos").on("value", (snap) => {
-	  if (snap.exists()) {
-		const cmds = snap.val();
+    // Atualizar selects quando ESP32 atualizar o RTDB
+    firebase.database().ref("comandos").on("value", (snap) => {
+      if (snap.exists()) {
+        const cmds = snap.val();
 
-		if (cmds.rele1) cmdRele1.value = cmds.rele1;
-		if (cmds.rele2) cmdRele2.value = cmds.rele2;
-	  }
-	});
+        if (cmds.rele1) cmdRele1.value = cmds.rele1;
+        if (cmds.rele2) cmdRele2.value = cmds.rele2;
+      }
+    });
 
-	// Carregar na inicialização
-	carregarComandos();
+    // Carregar na inicialização
+    carregarComandos();
 
 
     // ---------------------------
     // Helpers
     // ---------------------------
     const logArea = document.getElementById('logArea');
-    function addLog(msg){
-      const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
+    function addLog(msg) {
+      const t = new Date().toLocaleTimeString('pt-BR', { hour12: false });
       logArea.innerHTML = `<div>[${t}] ${msg}</div>` + logArea.innerHTML;
     }
 
-    function toHuman(ts){
-      if(!ts) return "--";
-      try { return new Date(Number(ts)).toLocaleString('pt-BR',{hour12:false}); }
-      catch(e){ return ts; }
+    function toHuman(ts) {
+      if (!ts) return "--";
+      try { return new Date(Number(ts)).toLocaleString('pt-BR', { hour12: false }); }
+      catch (e) { return ts; }
     }
 
     // ---------------------------
@@ -481,129 +675,129 @@
     // ---------------------------
     const themeSwitch = document.getElementById('themeSwitch');
     const themeLabel = document.getElementById('themeLabel');
-    function setTheme(isDark){
-	  document.body.setAttribute("data-theme", isDark ? "dark" : "light");
+    function setTheme(isDark) {
+      document.body.setAttribute("data-theme", isDark ? "dark" : "light");
 
-	  if (isDark){
-		themeSwitch.classList.add("on");
-		themeLabel.innerText = "Dark";
-	  } else {
-		themeSwitch.classList.remove("on");
-		themeLabel.innerText = "Light";
-	  }
-	}
+      if (isDark) {
+        themeSwitch.classList.add("on");
+        themeLabel.innerText = "Dark";
+      } else {
+        themeSwitch.classList.remove("on");
+        themeLabel.innerText = "Light";
+      }
+    }
 
     themeSwitch.addEventListener('click', async () => {
-	  const isDark = document.body.getAttribute('data-theme') === 'dark';
-	  const novoTema = isDark ? "light" : "dark";
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const novoTema = isDark ? "light" : "dark";
 
-	  // altera visual
-	  setTheme(novoTema === "dark");
+      // altera visual
+      setTheme(novoTema === "dark");
 
-	  // salva local
-	  localStorage.setItem('dash_theme', novoTema);
+      // salva local
+      localStorage.setItem('dash_theme', novoTema);
 
-	  // salva no Firebase
-	  await db.ref("config/tema").set(novoTema);
+      // salva no Firebase
+      await db.ref("config/tema").set(novoTema);
 
-	  addLog("Tema alterado para: " + novoTema);
-	});
-	
-	const multiplicacaoSwitch = document.getElementById("multiplicacaoSwitch");
-	const multiplicacaoLabel = document.getElementById("multiplicacaoLabel");
+      addLog("Tema alterado para: " + novoTema);
+    });
 
-	multiplicacaoSwitch.addEventListener("click", async () => {
-	  const ativo = multiplicacaoSwitch.classList.contains("on");
-	  const novo = !ativo;
+    const multiplicacaoSwitch = document.getElementById("multiplicacaoSwitch");
+    const multiplicacaoLabel = document.getElementById("multiplicacaoLabel");
 
-	  if (novo){
-		multiplicacaoSwitch.classList.add("on");
-		multiplicacaoLabel.innerText = "Ativo";
-	  } else {
-		multiplicacaoSwitch.classList.remove("on");
-		multiplicacaoLabel.innerText = "Desativado";
-	  }
+    multiplicacaoSwitch.addEventListener("click", async () => {
+      const ativo = multiplicacaoSwitch.classList.contains("on");
+      const novo = !ativo;
 
-	  await db.ref("config/multiplicacao").set(novo);
-	  addLog("Modo Multiplicação: " + (novo ? "Ativo" : "Desativado"));
-	});
+      if (novo) {
+        multiplicacaoSwitch.classList.add("on");
+        multiplicacaoLabel.innerText = "Ativo";
+      } else {
+        multiplicacaoSwitch.classList.remove("on");
+        multiplicacaoLabel.innerText = "Desativado";
+      }
 
-	db.ref("config/multiplicacao").on("value", snap => {
-	  const val = snap.val();
-	  if (val === true){
-		multiplicacaoSwitch.classList.add("on");
-		multiplicacaoLabel.innerText = "Ativo";
-	  } else {
-		multiplicacaoSwitch.classList.remove("on");
-		multiplicacaoLabel.innerText = "Desativado";
-	  }
-	});
+      await db.ref("config/multiplicacao").set(novo);
+      addLog("Modo Multiplicação: " + (novo ? "Ativo" : "Desativado"));
+    });
 
-	// ---------------------------
-	// Toggle Leitura de Distância (corrigido)
-	// ---------------------------
-	const distanciaSwitch = document.getElementById("distanciaSwitch");
-	const distanciaLabel  = document.getElementById("distanciaLabel");
+    db.ref("config/multiplicacao").on("value", snap => {
+      const val = snap.val();
+      if (val === true) {
+        multiplicacaoSwitch.classList.add("on");
+        multiplicacaoLabel.innerText = "Ativo";
+      } else {
+        multiplicacaoSwitch.classList.remove("on");
+        multiplicacaoLabel.innerText = "Desativado";
+      }
+    });
 
-	distanciaSwitch.addEventListener("click", async () => {
-	  const ativo = distanciaSwitch.classList.contains("on");
-	  const novo = !ativo;
+    // ---------------------------
+    // Toggle Leitura de Distância (corrigido)
+    // ---------------------------
+    const distanciaSwitch = document.getElementById("distanciaSwitch");
+    const distanciaLabel = document.getElementById("distanciaLabel");
 
-	  if (novo) {
-		distanciaSwitch.classList.add("on");
-		distanciaLabel.innerText = "Ativada";
-	  } else {
-		distanciaSwitch.classList.remove("on");
-		distanciaLabel.innerText = "Desativada";
-	  }
+    distanciaSwitch.addEventListener("click", async () => {
+      const ativo = distanciaSwitch.classList.contains("on");
+      const novo = !ativo;
 
-	  // Atualiza corretamente a variável utilizada pelo ESP32
-	  await db.ref("config/permitirLeituraDistancia").set(novo);
-  	  await db.ref("config/bomba2_controle").set(novo);
-	  addLog("Leitura de distância: " + (novo ? "Ativada" : "Desativada"));
-	});
+      if (novo) {
+        distanciaSwitch.classList.add("on");
+        distanciaLabel.innerText = "Ativada";
+      } else {
+        distanciaSwitch.classList.remove("on");
+        distanciaLabel.innerText = "Desativada";
+      }
 
-	// Sync com Firebase
-	db.ref("config/permitirLeituraDistancia").on("value", snap => {
-	  const val = snap.val();
+      // Atualiza corretamente a variável utilizada pelo ESP32
+      await db.ref("config/permitirLeituraDistancia").set(novo);
+      await db.ref("config/bomba2_controle").set(novo);
+      addLog("Leitura de distância: " + (novo ? "Ativada" : "Desativada"));
+    });
 
-	  if (val === true) {
-		distanciaSwitch.classList.add("on");
-		distanciaLabel.innerText = "Ativada";
-	  } else {
-		distanciaSwitch.classList.remove("on");
-		distanciaLabel.innerText = "Desativada";
-	  }
-	});
-	
-	// ---------------------------
-	// Carregar tema do Firebase
-	// ---------------------------
-	db.ref("config/tema").on("value", snap => {
-	  const tema = snap.val();
+    // Sync com Firebase
+    db.ref("config/permitirLeituraDistancia").on("value", snap => {
+      const val = snap.val();
 
-	  if (!tema) return;   // evita erro se o valor for null
+      if (val === true) {
+        distanciaSwitch.classList.add("on");
+        distanciaLabel.innerText = "Ativada";
+      } else {
+        distanciaSwitch.classList.remove("on");
+        distanciaLabel.innerText = "Desativada";
+      }
+    });
 
-	  const isDark = tema === "dark";
+    // ---------------------------
+    // Carregar tema do Firebase
+    // ---------------------------
+    db.ref("config/tema").on("value", snap => {
+      const tema = snap.val();
 
-	  // aplica tema na tela
-	  setTheme(isDark);
+      if (!tema) return;   // evita erro se o valor for null
 
-	  // atualiza toggle e label
-	  themeSwitch.classList.toggle("on", isDark);
-	  themeLabel.innerText = isDark ? "Dark" : "Light";
+      const isDark = tema === "dark";
 
-	  // salva no localStorage também
-	  localStorage.setItem("dash_theme", tema);
+      // aplica tema na tela
+      setTheme(isDark);
 
-	  addLog("Tema carregado do Firebase: " + tema);
-	});
+      // atualiza toggle e label
+      themeSwitch.classList.toggle("on", isDark);
+      themeLabel.innerText = isDark ? "Dark" : "Light";
+
+      // salva no localStorage também
+      localStorage.setItem("dash_theme", tema);
+
+      addLog("Tema carregado do Firebase: " + tema);
+    });
 
 
 
     // load saved
     const temaLocal = localStorage.getItem('dash_theme');
-	if (temaLocal) setTheme(temaLocal === "dark");
+    if (temaLocal) setTheme(temaLocal === "dark");
 
 
     // ---------------------------
@@ -615,28 +809,28 @@
     const ctxD = document.getElementById('chartDist').getContext('2d');
 
     const chartTemp = new Chart(ctxT, {
-      type:'line',
-      data:{labels:[],datasets:[{label:'Temp (°C)', data:[], borderColor:'#ff4d4d', backgroundColor:'rgba(255,77,77,0.06)', tension:0.25, pointRadius:2}]},
-      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}}
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Temp (°C)', data: [], borderColor: '#ff4d4d', backgroundColor: 'rgba(255,77,77,0.06)', tension: 0.25, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
     });
 
     const chartOD = new Chart(ctxO, {
-      type:'line',
-      data:{labels:[],datasets:[{label:'OD', data:[], borderColor:'#0ea5a4', backgroundColor:'rgba(14,165,164,0.06)', tension:0.25, pointRadius:2}]},
-      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}}
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'OD', data: [], borderColor: '#0ea5a4', backgroundColor: 'rgba(14,165,164,0.06)', tension: 0.25, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
     });
 
     const chartDist = new Chart(ctxD, {
-      type:'line',
-      data:{labels:[],datasets:[{label:'Dist (cm)', data:[], borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.06)', tension:0.25, pointRadius:2}]},
-      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}}
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Dist (cm)', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.06)', tension: 0.25, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
     });
 
-    function pushChart(chart, value){
-      const t = new Date().toLocaleTimeString('pt-BR',{hour12:false});
+    function pushChart(chart, value) {
+      const t = new Date().toLocaleTimeString('pt-BR', { hour12: false });
       chart.data.labels.push(t);
       chart.data.datasets[0].data.push(value);
-      if(chart.data.labels.length>maxPoints){ chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+      if (chart.data.labels.length > maxPoints) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
       chart.update();
     }
 
@@ -644,28 +838,28 @@
     // Bind Firebase listeners (status + config)
     // ---------------------------
     // status values
-    db.ref('status').on('value', snap=>{
+    db.ref('status').on('value', snap => {
       const s = snap.val();
-      if(!s) return;
+      if (!s) return;
 
       // readings
       const temp = s.temperatura ?? null;
       const od = s.od ?? null;
       const dist = s.distancia ?? null;
 
-      document.getElementById('tempAtual').innerText = temp!=null ? temp.toFixed(2) + ' °C' : '--';
-      document.getElementById('odAtual').innerText = od!=null ? od.toFixed(2) : '--';
-      document.getElementById('distAtual').innerText = dist!=null ? dist.toFixed(2) + ' cm' : '--';
+      document.getElementById('tempAtual').innerText = temp != null ? temp.toFixed(2) + ' °C' : '--';
+      document.getElementById('odAtual').innerText = od != null ? od.toFixed(2) : '--';
+      document.getElementById('distAtual').innerText = dist != null ? dist.toFixed(2) + ' cm' : '--';
 
       // last update
-      if(s.ultima_atualizacao) {
+      if (s.ultima_atualizacao) {
         document.getElementById('tsNice').innerText = toHuman(s.ultima_atualizacao);
         document.getElementById('lastUpdate').innerText = 'Última atualização: ' + toHuman(s.ultima_atualizacao);
       }
 
       // bombas + motivos
-      const b1 = (s.bomba1 && s.bomba1.toUpperCase && s.bomba1.toUpperCase()==='LIGADA');
-      const b2 = (s.bomba2 && s.bomba2.toUpperCase && s.bomba2.toUpperCase()==='LIGADA');
+      const b1 = (s.bomba1 && s.bomba1.toUpperCase && s.bomba1.toUpperCase() === 'LIGADA');
+      const b2 = (s.bomba2 && s.bomba2.toUpperCase && s.bomba2.toUpperCase() === 'LIGADA');
 
       document.getElementById('bomba1Badge').className = b1 ? 'badge-on' : 'badge-off';
       document.getElementById('bomba1Badge').innerText = b1 ? 'Ligada' : 'Desligada';
@@ -676,18 +870,18 @@
       document.getElementById('bomba2Motivo').innerText = s.bomba2_motivo ?? '--';
 
       // logs
-      addLog(`Temp ${temp ?? '--'} °C · OD ${od ?? '--'} · Dist ${dist ?? '--'} cm · B1:${b1? 'ON':'OFF'} B2:${b2? 'ON':'OFF'}`);
+      addLog(`Temp ${temp ?? '--'} °C · OD ${od ?? '--'} · Dist ${dist ?? '--'} cm · B1:${b1 ? 'ON' : 'OFF'} B2:${b2 ? 'ON' : 'OFF'}`);
 
       // push charts
-      if(temp!=null) pushChart(chartTemp, Number(temp));
-      if(od!=null) pushChart(chartOD, Number(od));
-      if(dist!=null) pushChart(chartDist, Number(dist));
+      if (temp != null) pushChart(chartTemp, Number(temp));
+      if (od != null) pushChart(chartOD, Number(od));
+      if (dist != null) pushChart(chartDist, Number(dist));
     });
 
     // config values
-    db.ref('config').on('value', snap=>{
+    db.ref('config').on('value', snap => {
       const c = snap.val();
-      if(!c) return;
+      if (!c) return;
 
       // populate labels and controls (note naming kept from your RTDB)
       document.getElementById('labelTempMin').innerText = c.temperatura_min ?? '--';
@@ -715,7 +909,7 @@
     // ---------------------------
     // Save config
     // ---------------------------
-    function salvarConfig(){
+    function salvarConfig() {
       const obj = {
         temperatura_max: Number(document.getElementById('inputTempMax').value),
         temperatura_min: Number(document.getElementById('inputTempMin').value),
@@ -726,26 +920,26 @@
         intervalo_ligado: Number(document.getElementById('inputMinLigado').value),
         intervalo_sem_mudanca: Number(document.getElementById('inputMinSem').value),
         periodo_ativacao: Number(document.getElementById('inputPeriodoAtivacao').value),
-        multiplicacao: document.getElementById('multiplicacaoSwitch').value
+        multiplicacao: document.getElementById('multiplicacaoSwitch').value === 'true'
       };
       db.ref('config').update(obj)
-        .then(()=> {
-			alert("Configurações salvas no Firebase.");
-			addLog('Configurações salvas no Firebase.');
-		})
-        .catch(e=> addLog('Erro ao salvar config: '+e));
+        .then(() => {
+          alert("Configurações salvas no Firebase.");
+          addLog('Configurações salvas no Firebase.');
+        })
+        .catch(e => addLog('Erro ao salvar config: ' + e));
     }
 
     // ---------------------------
     // Force update
     // ---------------------------
-    function forcarAtualizacao(){
+    function forcarAtualizacao() {
       db.ref('comandos/atualizar').set(firebase.database.ServerValue.TIMESTAMP)
-		.then(()=> {
-			alert("Forçar atualização enviado.");
-			addLog('Forçar atualização enviado.');
-		})
-        .catch(e=> addLog('Erro forçar atualização: '+e));
+        .then(() => {
+          alert("Forçar atualização enviado.");
+          addLog('Forçar atualização enviado.');
+        })
+        .catch(e => addLog('Erro forçar atualização: ' + e));
     }
 
     // ---------------------------
@@ -755,4 +949,5 @@
 
   </script>
 </body>
+
 </html>
