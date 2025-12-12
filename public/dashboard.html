@@ -203,7 +203,7 @@
     }
 
     .btn {
-      display: inline-block;
+      display: grid;
       padding: 10px 14px;
       border-radius: 10px;
       background: var(--accent);
@@ -519,11 +519,11 @@
           </div>
 
           <div class="field">
-            <label>Minutos ligado (Y)</label>
+            <label>Ativação ociosidade (min)</label>
             <input id="inputMinLigado" type="number">
           </div>
           <div class="field">
-            <label>Minutos desligada (X)</label>
+            <label>Tempo ocioso (min)</label>
             <input id="inputMinSem" type="number">
           </div>
 
@@ -531,14 +531,35 @@
             <label>Período ativação (min)</label>
             <input id="inputPeriodoAtivacao" type="number">
           </div>
+
+          <hr style="grid-column: 1 / -1; border:none; height:5px">
+
           <div class="field">
             <label>Modo Multiplicação</label>
             <div id="multiplicacaoSwitch" class="switch" role="button">
               <div class="knob"></div>
             </div>
             <div class="small muted" id="multiplicacaoLabel">Desativado</div>
+            <div class="small muted" style="margin-top:6px">
+              Início: <span id="multiplicacaoStart">--</span>
+            </div>
+            <div class="small muted">
+              Fim previsto: <span id="multiplicacaoEnd">--</span>
+            </div>
+            <div class="small muted">
+              Tempo restante: <span id="multiplicacaoRemaining">--</span>
+            </div>
           </div>
 
+          <!-- colocar exemplo de valores -->
+          <div class="field">
+            <label>Duração Multiplicação (min) - ex:  60, 120, 180</label>
+            <input id="inputMultiplicacaoDuracao" type="number" min="1">
+            <div class="small muted">Tempo total da sessão de multiplicação</div>
+          </div>
+
+          <hr style="grid-column: 1 / -1; border:none; height:5px">
+          
           <div class="field">
             <label>Leitura Distância</label>
             <div id="distanciaSwitch" class="switch" role="button">
@@ -549,8 +570,10 @@
 
         </div>
 
+        <hr style="grid-column: 1 / -1; border:none; height:5px">
+
         <div style="height:12px"></div>
-        <div style="display:flex;gap:8px">
+        <div style="display:grid;">
           <button class="btn" onclick="salvarConfig()">Salvar</button>
         </div>
       </div>
@@ -650,6 +673,14 @@
         if (cmds.rele2) cmdRele2.value = cmds.rele2;
       }
     });
+
+    // Carregar duração da multiplicação (minutos) ao abrir o dashboard
+    firebase.database().ref("/config/multiplicacao_duracao_minutos").once("value", snap => {
+      if (snap.exists()) {
+        document.getElementById("inputMultiplicacaoDuracao").value = snap.val();
+      }
+    });
+
 
     // Carregar na inicialização
     carregarComandos();
@@ -753,7 +784,7 @@
 
       // Atualiza corretamente a variável utilizada pelo ESP32
       await db.ref("config/permitirLeituraDistancia").set(novo);
-      await db.ref("config/bomba2_controle").set(novo);
+      await db.ref("config/bomba2_controle").set(novo ? "ATIVADO" : "DESATIVADO");
       addLog("Leitura de distância: " + (novo ? "Ativada" : "Desativada"));
     });
 
@@ -876,7 +907,57 @@
       if (temp != null) pushChart(chartTemp, Number(temp));
       if (od != null) pushChart(chartOD, Number(od));
       if (dist != null) pushChart(chartDist, Number(dist));
+
+      // multiplicacao session info (persisted by ESP)
+      const mStart = s.multiplicacao_inicio || s.multiplicacao_inicio_timestamp || null;
+      const mDur = s.multiplicacao_duracao_minutos || s.multiplicacao_duracao_minutos || null;
+      const serverNow = s._server_now || s.server_now || null;
+
+      if (mStart) document.getElementById('multiplicacaoStart').innerText = toHuman(mStart);
+      else document.getElementById('multiplicacaoStart').innerText = '--';
+
+      if (mStart && mDur) {
+        const startMs = Number(mStart);
+        const durationMs = Number(mDur) * 60000;
+        const nowMs = serverNow ? Number(serverNow) : Date.now();
+        const endMs = startMs + durationMs;
+        document.getElementById('multiplicacaoEnd').innerText = toHuman(endMs);
+        const remaining = endMs - nowMs;
+        document.getElementById('multiplicacaoRemaining').innerText = remaining > 0 ? msToHuman(remaining) : 'Expirada';
+      } else {
+        document.getElementById('multiplicacaoEnd').innerText = '--';
+        document.getElementById('multiplicacaoRemaining').innerText = '--';
+      }
     });
+
+    // Atualiza countdown mesmo sem mudanças do RTDB (1s)
+    function msToHuman(ms) {
+      if (ms <= 0) return '0s';
+      const s = Math.floor(ms/1000);
+      const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); const sec = s%60;
+      if (h>0) return `${h}h ${m}m ${sec}s`;
+      if (m>0) return `${m}m ${sec}s`;
+      return `${sec}s`;
+    }
+
+    // também lemos /status/_server_now periodicamente para corrigir relógio se disponível
+    setInterval(async () => {
+      const snap = await db.ref('status').once('value');
+      const s = snap.val();
+      if (!s) return;
+      const mStart = s.multiplicacao_inicio || null;
+      const mDur = s.multiplicacao_duracao_minutos || null;
+      const serverNow = s._server_now || null;
+      if (mStart && mDur) {
+        const startMs = Number(mStart);
+        const durationMs = Number(mDur) * 60000;
+        const nowMs = serverNow ? Number(serverNow) : Date.now();
+        const endMs = startMs + durationMs;
+        document.getElementById('multiplicacaoEnd').innerText = toHuman(endMs);
+        const remaining = endMs - nowMs;
+        document.getElementById('multiplicacaoRemaining').innerText = remaining > 0 ? msToHuman(remaining) : 'Expirada';
+      }
+    }, 1000);
 
     // config values
     db.ref('config').on('value', snap => {
@@ -904,6 +985,8 @@
       document.getElementById('inputMinSem').value = c.intervalo_sem_mudanca ?? '';
       document.getElementById('inputPeriodoAtivacao').value = c.periodo_ativacao ?? '';
       document.getElementById('multiplicacaoSwitch').value = (c.multiplicacao ? 'true' : 'false');
+
+      document.getElementById("inputMultiplicacaoDuracao").value = (c.multiplicacao_duracao_minutos ?? 60);
     });
 
     // ---------------------------
@@ -920,7 +1003,8 @@
         intervalo_ligado: Number(document.getElementById('inputMinLigado').value),
         intervalo_sem_mudanca: Number(document.getElementById('inputMinSem').value),
         periodo_ativacao: Number(document.getElementById('inputPeriodoAtivacao').value),
-        multiplicacao: document.getElementById('multiplicacaoSwitch').value === 'true'
+        multiplicacao: document.getElementById('multiplicacaoSwitch').value === 'true',
+        multiplicacao_duracao_minutos: Number(document.getElementById("inputMultiplicacaoDuracao").value)
       };
       db.ref('config').update(obj)
         .then(() => {
@@ -929,7 +1013,7 @@
         })
         .catch(e => addLog('Erro ao salvar config: ' + e));
     }
-
+    
     // ---------------------------
     // Force update
     // ---------------------------
