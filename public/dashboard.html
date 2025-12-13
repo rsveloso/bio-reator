@@ -361,6 +361,40 @@
     .btn:hover {
       opacity: 0.9;
     }
+    /* Toast notifications */
+    #toastContainer {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 99999;
+      pointer-events: none;
+    }
+
+    .toast {
+      min-width: 220px;
+      max-width: 420px;
+      background: rgba(0,0,0,0.78);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: auto;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.success { background: linear-gradient(90deg,#16a34a,#34d399); color:#021; }
+    .toast.error { background: linear-gradient(90deg,#ef4444,#fb7185); color:#102; }
   </style>
 </head>
 
@@ -661,7 +695,7 @@
       firebase.database().ref("comandos/rele1").set(cmdRele1.value);
       firebase.database().ref("comandos/rele2").set(cmdRele2.value);
 
-      alert("Comandos enviados com sucesso!");
+      showToast("Comandos enviados com sucesso!", { type: 'success' });
     });
 
     // Atualizar selects quando ESP32 atualizar o RTDB
@@ -699,6 +733,43 @@
       if (!ts) return "--";
       try { return new Date(Number(ts)).toLocaleString('pt-BR', { hour12: false }); }
       catch (e) { return ts; }
+    }
+
+    // Toast helper: aparece fixo na tela mesmo com scroll
+    function ensureToastContainer() {
+      let c = document.getElementById('toastContainer');
+      if (!c) {
+        c = document.createElement('div');
+        c.id = 'toastContainer';
+        document.body.appendChild(c);
+      }
+      return c;
+    }
+
+    function showToast(message, opts = {}) {
+      const container = ensureToastContainer();
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      if (opts.type) toast.classList.add(opts.type);
+      toast.innerText = message;
+
+      container.appendChild(toast);
+
+      // force reflow then show
+      requestAnimationFrame(() => toast.classList.add('show'));
+
+      const duration = typeof opts.duration === 'number' ? opts.duration : 3500;
+
+      const remove = () => {
+        toast.classList.remove('show');
+        setTimeout(() => { try { container.removeChild(toast); } catch (e) {} }, 260);
+      };
+
+      setTimeout(remove, duration);
+
+      // allow click to dismiss quickly
+      toast.addEventListener('click', remove);
+      return toast;
     }
 
     // ---------------------------
@@ -910,7 +981,7 @@
 
       // multiplicacao session info (persisted by ESP)
       const mStart = s.multiplicacao_inicio || s.multiplicacao_inicio_timestamp || null;
-      const mDur = s.multiplicacao_duracao_minutos || s.multiplicacao_duracao_minutos || null;
+      const mDur = s.multiplicacao_duracao_minutos || null;
       const serverNow = s._server_now || s.server_now || null;
 
       if (mStart) document.getElementById('multiplicacaoStart').innerText = toHuman(mStart);
@@ -1008,7 +1079,7 @@
       };
       db.ref('config').update(obj)
         .then(() => {
-          alert("Configurações salvas no Firebase.");
+          showToast("Configurações salvas no Firebase.", { type: 'success' });
           addLog('Configurações salvas no Firebase.');
         })
         .catch(e => addLog('Erro ao salvar config: ' + e));
@@ -1020,7 +1091,7 @@
     function forcarAtualizacao() {
       db.ref('comandos/atualizar').set(firebase.database.ServerValue.TIMESTAMP)
         .then(() => {
-          alert("Forçar atualização enviado.");
+          showToast("Forçar atualização enviado.", { type: 'success' });
           addLog('Forçar atualização enviado.');
         })
         .catch(e => addLog('Erro forçar atualização: ' + e));
